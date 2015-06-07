@@ -6,8 +6,10 @@
  * @version 1.2.0, 05/14/14
  */
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -160,6 +162,109 @@ public class Network implements Cloneable, Serializable
             this.nodeWeight = nodeWeight;
 
         setClusters(cluster);
+    }
+
+    public static Network create( String fileName, int modularityFunction ) throws IOException
+    {
+        double[] edgeWeight1, edgeWeight2, nodeWeight;
+        int i, j, nEdges, nNodes;
+        int[] neighbor, source, destination;
+
+        int numberOfLines = numberOfLines( fileName );
+        try ( BufferedReader bufferedReader = new BufferedReader( new FileReader( fileName ) ) )
+        {
+            source = new int[numberOfLines];
+            destination = new int[numberOfLines];
+            edgeWeight1 = new double[numberOfLines];
+            int numberOfUniqueNodes = -1;
+            for ( j = 0; j < numberOfLines; j++ )
+            {
+                String[] splittedLine = bufferedReader.readLine().split( "\t" );
+                source[j] = Integer.parseInt( splittedLine[0] );
+                if ( source[j] > numberOfUniqueNodes )
+                {
+                    numberOfUniqueNodes = source[j];
+                }
+                destination[j] = Integer.parseInt( splittedLine[1] );
+                if ( destination[j] > numberOfUniqueNodes )
+                {
+                    numberOfUniqueNodes = destination[j];
+                }
+                edgeWeight1[j] = (splittedLine.length > 2) ? Double.parseDouble( splittedLine[2] ) : 1;
+            }
+            nNodes = numberOfUniqueNodes + 1;
+        }
+
+        int[] numberOfNeighbours = numberOfNeighbours( nNodes, source, destination, numberOfLines );
+        int[] firstNeighborIndex = new int[nNodes + 1];
+        nEdges = 0;
+        for ( i = 0; i < nNodes; i++ )
+        {
+            firstNeighborIndex[i] = nEdges;
+            nEdges += numberOfNeighbours[i];
+        }
+        firstNeighborIndex[nNodes] = nEdges;
+
+        neighbor = new int[nEdges];
+        edgeWeight2 = new double[nEdges];
+        Arrays.fill( numberOfNeighbours, 0 );
+        for ( i = 0; i < numberOfLines; i++ )
+        {
+            if ( source[i] < destination[i] )
+            {
+                j = firstNeighborIndex[source[i]] + numberOfNeighbours[source[i]];
+                neighbor[j] = destination[i];
+                edgeWeight2[j] = edgeWeight1[i];
+                numberOfNeighbours[source[i]]++;
+
+                j = firstNeighborIndex[destination[i]] + numberOfNeighbours[destination[i]];
+                neighbor[j] = source[i];
+                edgeWeight2[j] = edgeWeight1[i];
+                numberOfNeighbours[destination[i]]++;
+            }
+        }
+
+        if ( modularityFunction == 1 )
+        {
+            nodeWeight = new double[nNodes];
+            for ( i = 0; i < nEdges; i++ )
+            {
+                nodeWeight[neighbor[i]] += edgeWeight2[i];
+            }
+            return  new Network( nNodes, firstNeighborIndex, neighbor, edgeWeight2, nodeWeight );
+        }
+        else
+        {
+            return new Network( nNodes, firstNeighborIndex, neighbor, edgeWeight2 );
+        }
+    }
+
+    private static int[] numberOfNeighbours( int nNodes, int[] source, int[] destination, int numberOfLines )
+    {
+        int i;
+        int[] numberOfNeighbours = new int[nNodes];
+        for ( i = 0; i < numberOfLines; i++ )
+        {
+            if ( source[i] < destination[i] )
+            {
+                numberOfNeighbours[source[i]]++;
+                numberOfNeighbours[destination[i]]++;
+            }
+        }
+        return numberOfNeighbours;
+    }
+
+    private static int numberOfLines( String fileName ) throws IOException
+    {
+        BufferedReader bufferedReader = new BufferedReader( new FileReader( fileName ) );
+        int nLines;
+
+        nLines = 0;
+        while ( bufferedReader.readLine() != null )
+        { nLines++; }
+
+        bufferedReader.close();
+        return nLines;
     }
 
     public Object clone()
