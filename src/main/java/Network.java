@@ -14,10 +14,15 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
+
+import static java.lang.Double.parseDouble;
+import static java.lang.Integer.parseInt;
 
 public class Network implements Cloneable, Serializable
 {
@@ -139,12 +144,14 @@ public class Network implements Cloneable, Serializable
         this( numberOfNodes, firstNeighborIndex, neighbor, edgeWeight, null, null );
     }
 
-    public Network( int numberOfNodes, int[] firstNeighborIndex, int[] neighbor, double[] edgeWeight, double[] nodeWeight )
+    public Network( int numberOfNodes, int[] firstNeighborIndex, int[] neighbor, double[] edgeWeight,
+            double[] nodeWeight )
     {
         this( numberOfNodes, firstNeighborIndex, neighbor, edgeWeight, nodeWeight, null );
     }
 
-    public Network( int numberOfNodes, int[] firstNeighborIndex, int[] neighbor, double[] edgeWeight, double[] nodeWeight,
+    public Network( int numberOfNodes, int[] firstNeighborIndex, int[] neighbor, double[] edgeWeight,
+            double[] nodeWeight,
             int[] cluster )
     {
         int i, nEdges;
@@ -176,36 +183,52 @@ public class Network implements Cloneable, Serializable
         setClusters( cluster );
     }
 
-    public static Network create( String fileName, ModularityOptimizer.ModularityFunction modularityFunction ) throws IOException
+    static class Relationship
     {
-        double[] edgeWeight1, edgeWeight2;
+        private final int source;
+        private final int destination;
+        private double weight;
+
+        Relationship( int source, int destination, double weight )
+        {
+
+            this.source = source;
+            this.destination = destination;
+            this.weight = weight;
+        }
+
+        static Relationship from( String line )
+        {
+            String[] splittedLine = line.split( "\t" );
+            double weight = (splittedLine.length > 2) ? parseDouble( splittedLine[2] ) : 1;
+
+            return new Relationship( parseInt( splittedLine[0] ), parseInt( splittedLine[1] ), weight );
+        }
+    }
+
+    public static Network create( String fileName, ModularityOptimizer.ModularityFunction modularityFunction )
+            throws IOException
+    {
+        double[] edgeWeight2;
         int i, j, nEdges, nNodes;
-        int[] neighbor, source, destination;
+        int[] neighbor;
 
         int numberOfLines = numberOfLines( fileName );
+        List<Relationship> relationships = new ArrayList<>( 10_000 );
+        Set<Integer> nodes = new HashSet<>(10_000);
         try ( BufferedReader bufferedReader = new BufferedReader( new FileReader( fileName ) ) )
         {
-            source = new int[numberOfLines];
-            destination = new int[numberOfLines];
-            edgeWeight1 = new double[numberOfLines];
-
-            Set<Integer> nodes = new HashSet<>(  );
             for ( j = 0; j < numberOfLines; j++ )
             {
-                String[] splittedLine = bufferedReader.readLine().split( "\t" );
-
-                source[j] = Integer.parseInt( splittedLine[0] );
-                destination[j] = Integer.parseInt( splittedLine[1] );
-
-                nodes.add( source[j] );
-                nodes.add( destination[j] );
-
-                edgeWeight1[j] = (splittedLine.length > 2) ? Double.parseDouble( splittedLine[2] ) : 1;
+                Relationship rel = Relationship.from( bufferedReader.readLine() );
+                relationships.add( rel );
+                nodes.add( rel.source );
+                nodes.add( rel.destination );
             }
             nNodes = nodes.size();
         }
 
-        int[] numberOfNeighbours = numberOfNeighbours( nNodes, source, destination, numberOfLines );
+        int[] numberOfNeighbours = numberOfNeighbours( nNodes, relationships );
         int[] firstNeighborIndex = new int[nNodes + 1];
         nEdges = 0;
         for ( i = 0; i < nNodes; i++ )
@@ -219,37 +242,36 @@ public class Network implements Cloneable, Serializable
         edgeWeight2 = new double[nEdges];
 
         Arrays.fill( numberOfNeighbours, 0 );
-        for ( i = 0; i < numberOfLines; i++ )
-        {
-            if ( source[i] < destination[i] )
-            {
-                j = firstNeighborIndex[source[i]] + numberOfNeighbours[source[i]];
-                neighbor[j] = destination[i];
-                edgeWeight2[j] = edgeWeight1[i];
-                numberOfNeighbours[source[i]]++;
 
-                j = firstNeighborIndex[destination[i]] + numberOfNeighbours[destination[i]];
-                neighbor[j] = source[i];
-                edgeWeight2[j] = edgeWeight1[i];
-                numberOfNeighbours[destination[i]]++;
+        for ( Relationship relationship : relationships )
+        {
+            if(relationship.source < relationship.destination) {
+                j = firstNeighborIndex[relationship.source] + numberOfNeighbours[relationship.source];
+                neighbor[j] = relationship.destination;
+                edgeWeight2[j] = relationship.weight;
+                numberOfNeighbours[relationship.source]++;
+
+                j = firstNeighborIndex[relationship.destination] + numberOfNeighbours[relationship.destination];
+                neighbor[j] = relationship.source;
+                edgeWeight2[j] = relationship.weight;
+                numberOfNeighbours[relationship.destination]++;
             }
         }
 
-        return modularityFunction.createNetwork(nNodes, nEdges, firstNeighborIndex, neighbor, edgeWeight2 );
+        return modularityFunction.createNetwork( nNodes, nEdges, firstNeighborIndex, neighbor, edgeWeight2 );
     }
 
-    private static int[] numberOfNeighbours( int nNodes, int[] source, int[] destination, int numberOfLines )
+    private static int[] numberOfNeighbours( int nNodes, List<Relationship> relationships )
     {
-        int i;
         int[] numberOfNeighbours = new int[nNodes];
-        for ( i = 0; i < numberOfLines; i++ )
+        for ( Relationship relationship : relationships )
         {
-            if ( source[i] < destination[i] )
-            {
-                numberOfNeighbours[source[i]]++;
-                numberOfNeighbours[destination[i]]++;
+            if(relationship.source < relationship.destination) {
+                numberOfNeighbours[relationship.source]++;
+                numberOfNeighbours[relationship.destination]++;
             }
         }
+
         return numberOfNeighbours;
     }
 
@@ -674,7 +696,8 @@ public class Network implements Cloneable, Serializable
             for ( j = 0; j < reducedNetworkNEdges2; j++ )
             {
                 reducedNetworkNeighbor1[reducedNetworkNEdges1 + j] = reducedNetworkNeighbor2[j];
-                reducedNetworkEdgeWeight1[reducedNetworkNEdges1 + j] = reducedNetworkEdgeWeight2[reducedNetworkNeighbor2[j]];
+                reducedNetworkEdgeWeight1[reducedNetworkNEdges1 + j] =
+                        reducedNetworkEdgeWeight2[reducedNetworkNeighbor2[j]];
                 reducedNetworkEdgeWeight2[reducedNetworkNeighbor2[j]] = 0;
             }
             reducedNetworkNEdges1 += reducedNetworkNEdges2;
@@ -841,7 +864,8 @@ public class Network implements Cloneable, Serializable
             }
 
             i = (i < numberOfNodes - 1) ? (i + 1) : 0;
-        } while ( numberStableNodes < numberOfNodes );
+        }
+        while ( numberStableNodes < numberOfNodes );
 
         newCluster = new int[numberOfNodes];
         nClusters = 0;
