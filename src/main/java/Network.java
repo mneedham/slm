@@ -210,17 +210,17 @@ public class Network implements Cloneable, Serializable
             throws IOException
     {
         double[] edgeWeight2;
-        int i, j, nEdges, nNodes;
+        int i, nEdges, nNodes;
         int[] neighbor;
 
-        int numberOfLines = numberOfLines( fileName );
         List<Relationship> relationships = new ArrayList<>( 10_000 );
-        Set<Integer> nodes = new HashSet<>(10_000);
+        Set<Integer> nodes = new HashSet<>( 10_000 );
         try ( BufferedReader bufferedReader = new BufferedReader( new FileReader( fileName ) ) )
         {
-            for ( j = 0; j < numberOfLines; j++ )
+            String line;
+            while ( (line = bufferedReader.readLine()) != null )
             {
-                Relationship rel = Relationship.from( bufferedReader.readLine() );
+                Relationship rel = Relationship.from( line );
                 relationships.add( rel );
                 nodes.add( rel.source );
                 nodes.add( rel.destination );
@@ -245,8 +245,9 @@ public class Network implements Cloneable, Serializable
 
         for ( Relationship relationship : relationships )
         {
-            if(relationship.source < relationship.destination) {
-                j = firstNeighborIndex[relationship.source] + numberOfNeighbours[relationship.source];
+            if ( relationship.source < relationship.destination )
+            {
+                int j = firstNeighborIndex[relationship.source] + numberOfNeighbours[relationship.source];
                 neighbor[j] = relationship.destination;
                 edgeWeight2[j] = relationship.weight;
                 numberOfNeighbours[relationship.source]++;
@@ -266,26 +267,14 @@ public class Network implements Cloneable, Serializable
         int[] numberOfNeighbours = new int[nNodes];
         for ( Relationship relationship : relationships )
         {
-            if(relationship.source < relationship.destination) {
+            if ( relationship.source < relationship.destination )
+            {
                 numberOfNeighbours[relationship.source]++;
                 numberOfNeighbours[relationship.destination]++;
             }
         }
 
         return numberOfNeighbours;
-    }
-
-    private static int numberOfLines( String fileName ) throws IOException
-    {
-        BufferedReader bufferedReader = new BufferedReader( new FileReader( fileName ) );
-        int nLines;
-
-        nLines = 0;
-        while ( bufferedReader.readLine() != null )
-        { nLines++; }
-
-        bufferedReader.close();
-        return nLines;
     }
 
     public Object clone()
