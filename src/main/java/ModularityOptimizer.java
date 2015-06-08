@@ -76,11 +76,7 @@ public class ModularityOptimizer
             System.out.format( "Number of nodes: %d%n", network.getNNodes() );
             System.out.format( "Number of edges: %d%n", network.getNEdges() / 2 );
             System.out.println();
-            System.out.println( "Running " + ((algorithm == 1) ? "Louvain algorithm" : ((algorithm == 2)
-                                                                                        ? "Louvain algorithm with " +
-                                                                                          "multilevel refinement"
-                                                                                        : "smart local moving " +
-                                                                                          "algorithm")) +
+            System.out.println( "Running " + algorithmDescription( algorithm ) +
                                 "..." );
             System.out.println();
         }
@@ -95,11 +91,13 @@ public class ModularityOptimizer
         for ( i = 0; i < nRandomStarts; i++ )
         {
             if ( printOutput && (nRandomStarts > 1) )
-            { System.out.format( "Random start: %d%n", i + 1 ); }
+            {
+                System.out.format( "Random start: %d%n", i + 1 );
+            }
 
             network.initSingletonClusters();
 
-            printCurrentClusters( network, "Init" );
+            printCurrentClusters( network );
 
             j = 0;
             update = true;
@@ -119,7 +117,7 @@ public class ModularityOptimizer
                 else if ( algorithm == 3 )
                 {
                     network.runSmartLocalMovingAlgorithm( resolution2, random );
-                    printCurrentClusters( network, "Iteration " + j );
+                    printCurrentClusters( network );
                 }
 
                 j++;
@@ -168,9 +166,15 @@ public class ModularityOptimizer
         writeOutputFile( outputFileName, cluster );
     }
 
-    private static void printCurrentClusters( Network network, String description )
+    private static String algorithmDescription( int algorithm )
     {
-//        System.out.println( description + ":");
+        return (algorithm == 1) ? "Louvain algorithm" :
+               ((algorithm == 2) ? "Louvain algorithm with multilevel refinement" :
+                "smart local moving algorithm");
+    }
+
+    private static void printCurrentClusters( Network network )
+    {
         for ( int item : network.getClusters() )
         {
             System.out.print( item + " " );
