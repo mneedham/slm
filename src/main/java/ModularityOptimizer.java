@@ -26,15 +26,15 @@ public class ModularityOptimizer
                     }
 
                     @Override
-                    Network createNetwork( int nNodes, int nEdges, int[] firstNeighborIndex, int[] neighbor, double[] edgeWeight2 )
+                    Network createNetwork( int nNodes, int nEdges, int[] firstNeighborIndex, int[] neighbor, double[] edgeWeight )
                     {
-
+                        // nodeWeight = sum of incoming + outgoing relationships weights
                         double[] nodeWeight = new double[nNodes];
                         for ( int i = 0; i < nEdges; i++ )
                         {
-                            nodeWeight[neighbor[i]] += edgeWeight2[i];
+                            nodeWeight[neighbor[i]] += edgeWeight[i];
                         }
-                        return new Network( nNodes, firstNeighborIndex, neighbor, edgeWeight2, nodeWeight );
+                        return new Network( nNodes, firstNeighborIndex, neighbor, edgeWeight, nodeWeight );
 
                     }
                 },
@@ -80,12 +80,12 @@ public class ModularityOptimizer
     {
         boolean printOutput, update;
         Console console;
-        double modularity, maxModularity, resolution, resolution2;
+        double modularity, maxModularity, resolution;
         int algorithm;
         int i;
         int j;
         ModularityFunction modularityFunction;
-        int nClusters;
+        int numberOfClusters;
         int nIterations;
         int nRandomStarts;
         int[] cluster;
@@ -151,11 +151,11 @@ public class ModularityOptimizer
             System.out.println();
         }
 
-        resolution2 = modularityFunction.resolution( resolution, network );
+        double resolution2 = modularityFunction.resolution( resolution, network );
 
         beginTime = System.currentTimeMillis();
         cluster = null;
-        nClusters = -1;
+        numberOfClusters = -1;
         maxModularity = Double.NEGATIVE_INFINITY;
         random = new Random( randomSeed );
         for ( i = 0; i < nRandomStarts; i++ )
@@ -203,7 +203,7 @@ public class ModularityOptimizer
             {
                 network.orderClustersByNNodes();
                 cluster = network.getClusters();
-                nClusters = network.getNClusters();
+                numberOfClusters = network.getNClusters();
                 maxModularity = modularity;
             }
 
@@ -226,7 +226,7 @@ public class ModularityOptimizer
             }
             else
             { System.out.format( "Maximum modularity in %d random starts: %.4f%n", nRandomStarts, maxModularity ); }
-            System.out.format( "Number of communities: %d%n", nClusters );
+            System.out.format( "Number of communities: %d%n", numberOfClusters );
             System.out.format( "Elapsed time: %d seconds%n", Math.round( (endTime - beginTime) / 1000.0 ) );
             System.out.println();
             System.out.println( "Writing output file..." );
