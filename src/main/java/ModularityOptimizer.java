@@ -24,6 +24,19 @@ public class ModularityOptimizer
                     {
                         return (resolution / network.getTotalEdgeWeight());
                     }
+
+                    @Override
+                    Network createNetwork( int nNodes, int nEdges, int[] firstNeighborIndex, int[] neighbor, double[] edgeWeight2 )
+                    {
+
+                        double[] nodeWeight = new double[nNodes];
+                        for ( int i = 0; i < nEdges; i++ )
+                        {
+                            nodeWeight[neighbor[i]] += edgeWeight2[i];
+                        }
+                        return new Network( nNodes, firstNeighborIndex, neighbor, edgeWeight2, nodeWeight );
+
+                    }
                 },
         Alternative( 2 )
                 {
@@ -31,6 +44,13 @@ public class ModularityOptimizer
                     double resolution( double resolution, Network network )
                     {
                         return resolution;
+                    }
+
+                    @Override
+                    Network createNetwork( int nNodes, int nEdges, int[] firstNeighborIndex, int[] neighbor,
+                            double[] edgeWeight2 )
+                    {
+                        return new Network( nNodes, firstNeighborIndex, neighbor, edgeWeight2 );
                     }
                 };
 
@@ -51,6 +71,9 @@ public class ModularityOptimizer
         }
 
         abstract double resolution( double resolution, Network network );
+
+        abstract Network createNetwork( int nNodes, int nEdges, int[] firstNeighborIndex, int[] neighbor,
+                double[] edgeWeight2 );
     }
 
     public static void main( String[] args ) throws IOException

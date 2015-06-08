@@ -235,19 +235,7 @@ public class Network implements Cloneable, Serializable
             }
         }
 
-        if ( modularityFunction.equals( ModularityOptimizer.ModularityFunction.Standard ) )
-        {
-            double[] nodeWeight = new double[nNodes];
-            for ( i = 0; i < nEdges; i++ )
-            {
-                nodeWeight[neighbor[i]] += edgeWeight2[i];
-            }
-            return new Network( nNodes, firstNeighborIndex, neighbor, edgeWeight2, nodeWeight );
-        }
-        else
-        {
-            return new Network( nNodes, firstNeighborIndex, neighbor, edgeWeight2 );
-        }
+        return modularityFunction.createNetwork(nNodes, nEdges, firstNeighborIndex, neighbor, edgeWeight2 );
     }
 
     private static int[] numberOfNeighbours( int nNodes, int[] source, int[] destination, int numberOfLines )
@@ -344,7 +332,9 @@ public class Network implements Cloneable, Serializable
 
         totalEdgeWeight = totalEdgeWeightSelfLinks;
         for ( i = 0; i < neighbor.length; i++ )
-        { totalEdgeWeight += edgeWeight[i]; }
+        {
+            totalEdgeWeight += edgeWeight[i];
+        }
 
         return totalEdgeWeight;
     }
