@@ -16,7 +16,7 @@ public class SLMIT
     {
         // given
         String input = "karate_club_network.txt";
-        String output = "foo.txt";
+        String output = "output.txt";
         String[] args = new String[]{input, output, "1", "1.0", "3", "1", "10", "0", "1"};
 
         // When

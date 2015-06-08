@@ -10,7 +10,7 @@ public class NetworkTest
     @Test
     public void shouldCreateKarateNetwork() throws IOException
     {
-        int alternativeModularityFunction = 1;
+        ModularityOptimizer.ModularityFunction alternativeModularityFunction = ModularityOptimizer.ModularityFunction.Standard;
         Network network = Network.create( "karate_club_network.txt", alternativeModularityFunction );
 
         assertEquals(34, network.getNNodes());

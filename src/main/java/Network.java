@@ -33,7 +33,7 @@ public class Network implements Cloneable, Serializable
     private int[] cluster;
 
     private double[] clusterWeight;
-    private int[] nNodesPerCluster;
+    private int[] numberNodesPerCluster;
     private int[][] nodePerCluster;
     private boolean clusteringStatsAvailable;
 
@@ -176,7 +176,7 @@ public class Network implements Cloneable, Serializable
         setClusters( cluster );
     }
 
-    public static Network create( String fileName, int modularityFunction ) throws IOException
+    public static Network create( String fileName, ModularityOptimizer.ModularityFunction modularityFunction ) throws IOException
     {
         double[] edgeWeight1, edgeWeight2;
         int i, j, nEdges, nNodes;
@@ -235,7 +235,7 @@ public class Network implements Cloneable, Serializable
             }
         }
 
-        if ( modularityFunction == 1 )
+        if ( modularityFunction.equals( ModularityOptimizer.ModularityFunction.Standard ) )
         {
             double[] nodeWeight = new double[nNodes];
             for ( i = 0; i < nEdges; i++ )
@@ -400,7 +400,7 @@ public class Network implements Cloneable, Serializable
         if ( !clusteringStatsAvailable )
         { calcClusteringStats(); }
 
-        return nNodesPerCluster;
+        return numberNodesPerCluster;
     }
 
     public int[][] getNodesPerCluster()
@@ -428,7 +428,9 @@ public class Network implements Cloneable, Serializable
         nClusters = numberOfNodes;
         cluster = new int[numberOfNodes];
         for ( i = 0; i < numberOfNodes; i++ )
-        { cluster[i] = i; }
+        {
+            cluster[i] = i;
+        }
 
         deleteClusteringStats();
     }
@@ -499,10 +501,6 @@ public class Network implements Cloneable, Serializable
         {
             return;
         }
-        System.out.println("MERGE!!!!");
-        printCluster( cluster );
-        printCluster( newCluster );
-
 
         int i = 0;
         for ( int j = 0; j < numberOfNodes; j++ )
@@ -515,8 +513,6 @@ public class Network implements Cloneable, Serializable
             cluster[j] = k;
         }
         nClusters = i + 1;
-        printCluster( cluster );
-        System.out.println( "MERGED!!!!" );
 
         deleteClusteringStats();
     }
@@ -1154,7 +1150,7 @@ public class Network implements Cloneable, Serializable
 
         clusterSize = new ClusterSize[nClusters];
         for ( i = 0; i < nClusters; i++ )
-        { clusterSize[i] = new ClusterSize( i, orderByWeight ? clusterWeight[i] : nNodesPerCluster[i] ); }
+        { clusterSize[i] = new ClusterSize( i, orderByWeight ? clusterWeight[i] : numberNodesPerCluster[i] ); }
 
         Arrays.sort( clusterSize );
 
@@ -1235,26 +1231,26 @@ public class Network implements Cloneable, Serializable
         int i, j;
 
         clusterWeight = new double[nClusters];
-        nNodesPerCluster = new int[nClusters];
+        numberNodesPerCluster = new int[nClusters];
         nodePerCluster = new int[nClusters][];
 
         for ( i = 0; i < numberOfNodes; i++ )
         {
             clusterWeight[cluster[i]] += nodeWeight[i];
-            nNodesPerCluster[cluster[i]]++;
+            numberNodesPerCluster[cluster[i]]++;
         }
 
         for ( i = 0; i < nClusters; i++ )
         {
-            nodePerCluster[i] = new int[nNodesPerCluster[i]];
-            nNodesPerCluster[i] = 0;
+            nodePerCluster[i] = new int[numberNodesPerCluster[i]];
+            numberNodesPerCluster[i] = 0;
         }
 
         for ( i = 0; i < numberOfNodes; i++ )
         {
             j = cluster[i];
-            nodePerCluster[j][nNodesPerCluster[j]] = i;
-            nNodesPerCluster[j]++;
+            nodePerCluster[j][numberNodesPerCluster[j]] = i;
+            numberNodesPerCluster[j]++;
         }
 
         clusteringStatsAvailable = true;
@@ -1263,7 +1259,7 @@ public class Network implements Cloneable, Serializable
     private void deleteClusteringStats()
     {
         clusterWeight = null;
-        nNodesPerCluster = null;
+        numberNodesPerCluster = null;
         nodePerCluster = null;
 
         clusteringStatsAvailable = false;

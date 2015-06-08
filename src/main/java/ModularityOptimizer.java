@@ -14,12 +14,57 @@ import java.util.Random;
 
 public class ModularityOptimizer
 {
+
+    enum ModularityFunction
+    {
+        Standard( 1 )
+                {
+                    @Override
+                    double resolution( double resolution, Network network )
+                    {
+                        return (resolution / network.getTotalEdgeWeight());
+                    }
+                },
+        Alternative( 2 )
+                {
+                    @Override
+                    double resolution( double resolution, Network network )
+                    {
+                        return resolution;
+                    }
+                };
+
+        private int id;
+
+        ModularityFunction( int id )
+        {
+            this.id = id;
+        }
+
+        public static ModularityFunction from( int id )
+        {
+            if ( id == Standard.id )
+            {
+                return Standard;
+            }
+            return Alternative;
+        }
+
+        abstract double resolution( double resolution, Network network );
+    }
+
     public static void main( String[] args ) throws IOException
     {
         boolean printOutput, update;
         Console console;
         double modularity, maxModularity, resolution, resolution2;
-        int algorithm, i, j, modularityFunction, nClusters, nIterations, nRandomStarts;
+        int algorithm;
+        int i;
+        int j;
+        ModularityFunction modularityFunction;
+        int nClusters;
+        int nIterations;
+        int nRandomStarts;
         int[] cluster;
         long beginTime, endTime, randomSeed;
         Network network;
@@ -30,7 +75,7 @@ public class ModularityOptimizer
         {
             inputFileName = args[0];
             outputFileName = args[1];
-            modularityFunction = Integer.parseInt( args[2] );
+            modularityFunction = ModularityFunction.from( Integer.parseInt( args[2] ) );
             resolution = Double.parseDouble( args[3] );
             algorithm = Integer.parseInt( args[4] );
             nRandomStarts = Integer.parseInt( args[5] );
@@ -52,7 +97,9 @@ public class ModularityOptimizer
             inputFileName = console.readLine( "Input file name: " );
             outputFileName = console.readLine( "Output file name: " );
             modularityFunction =
-                    Integer.parseInt( console.readLine( "Modularity function (1 = standard; 2 = alternative): " ) );
+                    ModularityFunction.from(
+                            Integer.parseInt( console.readLine( "Modularity function (1 = standard; 2" +
+                                                                " = alternative): " ) ) );
             resolution = Double.parseDouble( console.readLine( "Resolution parameter (e.g., 1.0): " ) );
             algorithm = Integer.parseInt( console.readLine(
                     "Algorithm (1 = Louvain; 2 = Louvain with multilevel refinement; 3 = smart local moving): " ) );
@@ -81,7 +128,7 @@ public class ModularityOptimizer
             System.out.println();
         }
 
-        resolution2 = ((modularityFunction == 1) ? (resolution / network.getTotalEdgeWeight()) : resolution);
+        resolution2 = modularityFunction.resolution( resolution, network );
 
         beginTime = System.currentTimeMillis();
         cluster = null;
@@ -97,7 +144,7 @@ public class ModularityOptimizer
 
             network.initSingletonClusters();
 
-            printCurrentClusters( network );
+//            printCurrentClusters( network );
 
             j = 0;
             update = true;
@@ -117,7 +164,7 @@ public class ModularityOptimizer
                 else if ( algorithm == 3 )
                 {
                     network.runSmartLocalMovingAlgorithm( resolution2, random );
-                    printCurrentClusters( network );
+//                    printCurrentClusters( network );
                 }
 
                 j++;
