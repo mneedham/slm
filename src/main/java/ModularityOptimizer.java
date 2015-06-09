@@ -10,6 +10,7 @@ import java.io.BufferedWriter;
 import java.io.Console;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Random;
 
 public class ModularityOptimizer
@@ -26,15 +27,18 @@ public class ModularityOptimizer
                     }
 
                     @Override
-                    Network createNetwork( int nNodes, int nEdges, int[] firstNeighborIndex, int[] neighbor, double[] edgeWeight )
+                    Network createNetwork( int nNodes, int nEdges, int[] firstNeighborIndex, int[] neighbor,
+                            double[] edgeWeight, Map<Integer,Network.Node> nodesMap )
                     {
                         // nodeWeight = sum of incoming + outgoing relationships weights
+
                         double[] nodeWeight = new double[nNodes];
-                        for ( int i = 0; i < nEdges; i++ )
+                        for ( Map.Entry<Integer,Network.Node> entry : nodesMap.entrySet() )
                         {
-                            nodeWeight[neighbor[i]] += edgeWeight[i];
+                            nodeWeight[entry.getKey()] = entry.getValue().weight();
                         }
-                        return new Network( nNodes, firstNeighborIndex, neighbor, edgeWeight, nodeWeight );
+
+                        return new Network( nNodes, firstNeighborIndex, neighbor, edgeWeight, nodeWeight, nodesMap );
 
                     }
                 },
@@ -48,7 +52,7 @@ public class ModularityOptimizer
 
                     @Override
                     Network createNetwork( int nNodes, int nEdges, int[] firstNeighborIndex, int[] neighbor,
-                            double[] edgeWeight2 )
+                            double[] edgeWeight2, Map<Integer,Network.Node> nodesMap )
                     {
                         return new Network( nNodes, firstNeighborIndex, neighbor, edgeWeight2 );
                     }
@@ -73,7 +77,7 @@ public class ModularityOptimizer
         abstract double resolution( double resolution, Network network );
 
         abstract Network createNetwork( int nNodes, int nEdges, int[] firstNeighborIndex, int[] neighbor,
-                double[] edgeWeight2 );
+                double[] edgeWeight2, Map<Integer,Network.Node> nodesMap );
     }
 
     public static void main( String[] args ) throws IOException

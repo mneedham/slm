@@ -16,16 +16,64 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 import static java.lang.Double.parseDouble;
 import static java.lang.Integer.parseInt;
 
 public class Network implements Cloneable, Serializable
 {
+
+    private Map<Integer,Node> nodesMap;
+
+    static class Node
+    {
+        int nodeId;
+        List<Relationship> in;
+        List<Relationship> out;
+
+        public Node( int nodeId )
+        {
+            this.nodeId = nodeId;
+            this.in = new ArrayList<>();
+            this.out = new ArrayList<>();
+        }
+
+        public Node in( Node source, double weight )
+        {
+            in.add( new Relationship( source.nodeId, this.nodeId, weight ) );
+            return this;
+        }
+
+        public Node out( Node destination, double weight )
+        {
+            out.add( new Relationship( this.nodeId, destination.nodeId, weight ) );
+            return this;
+        }
+
+        public int degree()
+        {
+            return out.size() + in.size();
+        }
+
+        public double weight() {
+            double weight = 0.0;
+            for ( Relationship relationship : in )
+            {
+                weight += relationship.weight;
+            }
+
+            for ( Relationship relationship : out )
+            {
+                weight += relationship.weight;
+            }
+            return weight;
+        }
+    }
+
     private static final long serialVersionUID = 1;
 
     private int numberOfNodes;
@@ -63,21 +111,29 @@ public class Network implements Cloneable, Serializable
 
     public Network( int numberOfNodes, int[][] edge )
     {
-        this( numberOfNodes, edge, null, null, null );
+        this( numberOfNodes, edge, null, null, null, null );
     }
 
     public Network( int numberOfNodes, int[][] edge, double[] edgeWeight )
     {
-        this( numberOfNodes, edge, edgeWeight, null, null );
+        this( numberOfNodes, edge, edgeWeight, null, null, null );
     }
 
     public Network( int numberOfNodes, int[][] edge, double[] edgeWeight, double[] nodeWeight )
     {
-        this( numberOfNodes, edge, edgeWeight, nodeWeight, null );
+        this( numberOfNodes, edge, edgeWeight, nodeWeight, null, null );
     }
 
-    public Network( int numberOfNodes, int[][] edge, double[] edgeWeight, double[] nodeWeight, int[] cluster )
+    public Network( int numberOfNodes, int[][] edge, double[] edgeWeight, double[] nodeWeight, int[] cluster,
+            Map<Integer,Node> nodesMap )
     {
+        this.nodesMap = nodesMap;
+        if ( nodesMap == null )
+        {
+            this.nodesMap = new HashMap<>();
+        }
+
+
         double[] edgeWeight2;
         int i, j, nEdges, nEdgesWithoutSelfLinks;
         int[] neighbor;
@@ -145,15 +201,16 @@ public class Network implements Cloneable, Serializable
     }
 
     public Network( int numberOfNodes, int[] firstNeighborIndex, int[] neighbor, double[] edgeWeight,
-            double[] nodeWeight )
+            double[] nodeWeight, Map<Integer,Node> nodesMap )
     {
-        this( numberOfNodes, firstNeighborIndex, neighbor, edgeWeight, nodeWeight, null );
+        this( numberOfNodes, firstNeighborIndex, neighbor, edgeWeight, nodeWeight, null, nodesMap );
     }
 
     public Network( int numberOfNodes, int[] firstNeighborIndex, int[] neighbor, double[] edgeWeight,
-            double[] nodeWeight,
-            int[] cluster )
+            double[] nodeWeight, int[] cluster, Map<Integer,Node> nodesMap )
     {
+        this.nodesMap = nodesMap;
+
         int i, nEdges;
 
         this.numberOfNodes = numberOfNodes;
@@ -210,33 +267,51 @@ public class Network implements Cloneable, Serializable
             throws IOException
     {
         double[] edgeWeight;
-        int i, nEdges, nNodes;
+        int i, nEdges;
         int[] neighbor;
 
         List<Relationship> relationships = new ArrayList<>( 10_000 );
-        Set<Integer> nodes = new HashSet<>( 10_000 );
+        Map<Integer,Node> nodesMap = new HashMap<>( 10_000 );
         try ( BufferedReader bufferedReader = new BufferedReader( new FileReader( fileName ) ) )
         {
             String line;
             while ( (line = bufferedReader.readLine()) != null )
             {
-                Relationship rel = Relationship.from( line );
-                relationships.add( rel );
-                nodes.add( rel.source );
-                nodes.add( rel.destination );
+                String[] parts = line.split( "\t" );
+                int sourceId = parseInt( parts[0] );
+                int destinationId = parseInt( parts[1] );
+
+                Node source = nodesMap.get( sourceId );
+                if ( source == null )
+                {
+                    source = new Node( sourceId );
+                    nodesMap.put( sourceId, source );
+                }
+
+                Node destination = nodesMap.get( destinationId );
+                if ( destination == null )
+                {
+                    destination = new Node( destinationId );
+                    nodesMap.put( destinationId, destination );
+                }
+                double weight = (parts.length > 2) ? parseDouble( parts[2] ) : 1;
+                destination.in( source, weight );
+                source.out( destination, weight );
+
+                relationships.add( Relationship.from( line ) );
             }
-            nNodes = nodes.size();
         }
 
-        int[] degree = degree( nNodes, relationships );
-        int[] firstNeighborIndex = new int[nNodes + 1];
+        int numberOfNodes = nodesMap.size();
+        int[] degree = degree( nodesMap );
+        int[] firstNeighborIndex = new int[numberOfNodes + 1];
         nEdges = 0;
-        for ( i = 0; i < nNodes; i++ )
+        for ( i = 0; i < numberOfNodes; i++ )
         {
             firstNeighborIndex[i] = nEdges;
             nEdges += degree[i];
         }
-        firstNeighborIndex[nNodes] = nEdges;
+        firstNeighborIndex[numberOfNodes] = nEdges;
 
         neighbor = new int[nEdges];
         edgeWeight = new double[nEdges];
@@ -259,19 +334,17 @@ public class Network implements Cloneable, Serializable
             }
         }
 
-        return modularityFunction.createNetwork( nNodes, nEdges, firstNeighborIndex, neighbor, edgeWeight );
+        return modularityFunction.createNetwork( numberOfNodes, nEdges, firstNeighborIndex, neighbor, edgeWeight,
+                nodesMap );
     }
 
-    private static int[] degree( int nNodes, List<Relationship> relationships )
+    private static int[] degree( Map<Integer,Node> nodesMap )
     {
-        int[] numberOfNeighbours = new int[nNodes];
-        for ( Relationship relationship : relationships )
+        int[] numberOfNeighbours = new int[nodesMap.size()];
+
+        for ( Map.Entry<Integer,Node> entry : nodesMap.entrySet() )
         {
-            if ( relationship.source < relationship.destination )
-            {
-                numberOfNeighbours[relationship.source]++;
-                numberOfNeighbours[relationship.destination]++;
-            }
+            numberOfNeighbours[entry.getKey()] = entry.getValue().degree();
         }
 
         return numberOfNeighbours;
@@ -362,7 +435,7 @@ public class Network implements Cloneable, Serializable
 
         totalNodeWeight = 0;
         for ( i = 0; i < numberOfNodes; i++ )
-        { totalNodeWeight += nodeWeight[i]; }
+        { totalNodeWeight += nodeWeight(i); }
 
         return totalNodeWeight;
     }
@@ -625,7 +698,8 @@ public class Network implements Cloneable, Serializable
 
         for ( int clusterId = 0; clusterId < numberOfClusters; clusterId++ )
         {
-            subnetwork[clusterId] = createSubnetwork( clusterId, subnetworkNode, subnetworkNeighbor, subnetworkEdgeWeight );
+            subnetwork[clusterId] =
+                    createSubnetwork( clusterId, subnetworkNode, subnetworkNeighbor, subnetworkEdgeWeight );
         }
 
         return subnetwork;
@@ -687,13 +761,14 @@ public class Network implements Cloneable, Serializable
                     }
                 }
 
-                reducedNetwork.nodeWeight[i] += nodeWeight[k];
+                reducedNetwork.nodeWeight[i] += nodeWeight(k);
             }
 
             for ( j = 0; j < reducedNetworkNEdges2; j++ )
             {
                 reducedNetworkNeighbor1[reducedNetworkNEdges1 + j] = reducedNetworkNeighbor2[j];
-                reducedNetworkEdgeWeight1[reducedNetworkNEdges1 + j] = reducedNetworkEdgeWeight2[reducedNetworkNeighbor2[j]];
+                reducedNetworkEdgeWeight1[reducedNetworkNEdges1 + j] =
+                        reducedNetworkEdgeWeight2[reducedNetworkNeighbor2[j]];
                 reducedNetworkEdgeWeight2[reducedNetworkNeighbor2[j]] = 0;
             }
             reducedNetworkNEdges1 += reducedNetworkNEdges2;
@@ -818,7 +893,7 @@ public class Network implements Cloneable, Serializable
                 edgeWeightsPointingToCluster[neighbourClusterId] += edgeWeight[k];
             }
 
-            clusterWeight[cluster[nodeId]] -= nodeWeight[nodeId];
+            clusterWeight[cluster[nodeId]] -= nodeWeight(nodeId);
             numberOfNodesPerCluster[cluster[nodeId]]--;
             if ( numberOfNodesPerCluster[cluster[nodeId]] == 0 )
             {
@@ -830,10 +905,12 @@ public class Network implements Cloneable, Serializable
             double maxQualityFunction = 0;
 
             // work out the best cluster to place this node in
-            for ( int neighbouringClusterIndex = 0; neighbouringClusterIndex < numberOfNeighbouringClusters; neighbouringClusterIndex++ )
+            for ( int neighbouringClusterIndex = 0; neighbouringClusterIndex < numberOfNeighbouringClusters;
+                  neighbouringClusterIndex++ )
             {
                 int clusterId = neighboringCluster[neighbouringClusterIndex];
-                qualityFunction = edgeWeightsPointingToCluster[clusterId] - nodeWeight[nodeId] * clusterWeight[clusterId] * resolution;
+                qualityFunction = edgeWeightsPointingToCluster[clusterId] -
+                                  nodeWeight(nodeId) * clusterWeight[clusterId] * resolution;
                 if ( (qualityFunction > maxQualityFunction) ||
                      ((qualityFunction == maxQualityFunction) && (clusterId < bestCluster)) )
                 {
@@ -848,7 +925,7 @@ public class Network implements Cloneable, Serializable
                 numberUnusedClusters--;
             }
 
-            clusterWeight[bestCluster] += nodeWeight[nodeId];
+            clusterWeight[bestCluster] += nodeWeight(nodeId);
             numberOfNodesPerCluster[bestCluster]++;
             if ( bestCluster == cluster[nodeId] )
             {
@@ -883,6 +960,11 @@ public class Network implements Cloneable, Serializable
         deleteClusteringStats();
 
         return update;
+    }
+
+    private double nodeWeight( int nodeId )
+    {
+        return nodeWeight[nodeId];
     }
 
     private int[] nodesInRandomOrder( int numberOfNodes, Random random )
@@ -1181,7 +1263,7 @@ public class Network implements Cloneable, Serializable
     private Network createSubnetwork( int clusterId, int[] subnetworkNode, int[] subnetworkNeighbor,
             double[] subnetworkEdgeWeight )
     {
-        int  k;
+        int k;
 
         Network subnetwork = new Network();
 
@@ -1193,7 +1275,7 @@ public class Network implements Cloneable, Serializable
             subnetwork.firstNeighborIndex = new int[2];
             subnetwork.neighbor = new int[0];
             subnetwork.edgeWeight = new double[0];
-            subnetwork.nodeWeight = new double[]{nodeWeight[nodePerCluster[clusterId][0]]};
+            subnetwork.nodeWeight = new double[]{nodeWeight(nodePerCluster[clusterId][0])};
         }
         else
         {
@@ -1225,8 +1307,9 @@ public class Network implements Cloneable, Serializable
                 }
 
                 subnetwork.firstNeighborIndex[i + 1] = subnetworkNEdges;
-                subnetwork.nodeWeight[i] = nodeWeight[nodeId];
+                subnetwork.nodeWeight[i] = nodeWeight(nodeId);
             }
+
 
             subnetwork.neighbor = new int[subnetworkNEdges];
             subnetwork.edgeWeight = new double[subnetworkNEdges];
@@ -1249,7 +1332,7 @@ public class Network implements Cloneable, Serializable
 
         for ( i = 0; i < numberOfNodes; i++ )
         {
-            clusterWeight[cluster[i]] += nodeWeight[i];
+            clusterWeight[cluster[i]] += nodeWeight(i);
             numberNodesPerCluster[cluster[i]]++;
         }
 
