@@ -74,7 +74,9 @@ public class Network implements Cloneable, Serializable
         {
             edgeWeight = new double[nEdges];
             for ( i = 0; i < nEdges; i++ )
-            { edgeWeight[i] = 1; }
+            {
+                edgeWeight[i] = 1;
+            }
         }
         totalEdgeWeightSelfLinks = 0;
 
@@ -85,7 +87,9 @@ public class Network implements Cloneable, Serializable
         for ( j = 0; j < nEdges; j++ )
         {
             if ( edge[0][j] == edge[1][j] )
-            { totalEdgeWeightSelfLinks += edgeWeight[j]; }
+            {
+                totalEdgeWeightSelfLinks += edgeWeight[j];
+            }
             else
             {
                 if ( edge[0][j] >= i )
@@ -402,7 +406,7 @@ public class Network implements Cloneable, Serializable
     public ReducedNetwork calculateReducedNetwork()
     {
         double[] reducedNetworkEdgeWeight1, reducedNetworkEdgeWeight2;
-        int i, j, k, l, m, reducedNetworkNEdges1, reducedNetworkNEdges2;
+        int clusterId, index, nodeId, l, otherNodeClusterId, reducedNetworkNEdges1, reducedNetworkNEdges2;
         int[] reducedNetworkNeighbor1, reducedNetworkNeighbor2;
 
         if ( cluster == null )
@@ -429,44 +433,45 @@ public class Network implements Cloneable, Serializable
         reducedNetworkEdgeWeight2 = new double[numberOfClusters];
 
         reducedNetworkNEdges1 = 0;
-        for ( i = 0; i < numberOfClusters; i++ )
+        for ( clusterId = 0; clusterId < numberOfClusters; clusterId++ )
         {
             reducedNetworkNEdges2 = 0;
-            for ( j = 0; j < clusters.get( i ).numberOfNodes(); j++ )
+            for ( index = 0; index < clusters.get( clusterId ).numberOfNodes(); index++ )
             {
-                k = clusters.get( i ).nodesIds()[j];
+                nodeId = clusters.get( clusterId ).nodesIds()[index];
 
-                for ( l = firstNeighborIndex[k]; l < firstNeighborIndex[k + 1]; l++ )
+                for ( Relationship relationship : nodes.get( nodeId ).relationships() )
                 {
-                    m = cluster[neighbor[l]];
-                    if ( m != i )
+                    int otherNodeId = relationship.otherNode( nodeId );
+                    otherNodeClusterId = clusters.findClusterId( otherNodeId );
+                    if ( otherNodeClusterId != clusterId )
                     {
-                        if ( reducedNetworkEdgeWeight2[m] == 0 )
+                        if ( reducedNetworkEdgeWeight2[otherNodeClusterId] == 0 )
                         {
-                            reducedNetworkNeighbor2[reducedNetworkNEdges2] = m;
+                            reducedNetworkNeighbor2[reducedNetworkNEdges2] = otherNodeClusterId;
                             reducedNetworkNEdges2++;
                         }
-                        reducedNetworkEdgeWeight2[m] += edgeWeight[l];
+                        reducedNetworkEdgeWeight2[otherNodeClusterId] += edgeWeight[otherNodeId];
                     }
                     else
                     {
-                        reducedNetwork.totalEdgeWeightSelfLinks += edgeWeight[l];
+                        reducedNetwork.totalEdgeWeightSelfLinks += edgeWeight[otherNodeId];
                     }
                 }
 
-                reducedNetwork.nodeWeight[i] += nodeWeight( k );
+                reducedNetwork.nodeWeight[clusterId] += nodeWeight( nodeId );
             }
 
-            for ( j = 0; j < reducedNetworkNEdges2; j++ )
+            for ( index = 0; index < reducedNetworkNEdges2; index++ )
             {
-                reducedNetworkNeighbor1[reducedNetworkNEdges1 + j] = reducedNetworkNeighbor2[j];
-                reducedNetworkEdgeWeight1[reducedNetworkNEdges1 + j] =
-                        reducedNetworkEdgeWeight2[reducedNetworkNeighbor2[j]];
-                reducedNetworkEdgeWeight2[reducedNetworkNeighbor2[j]] = 0;
+                reducedNetworkNeighbor1[reducedNetworkNEdges1 + index] = reducedNetworkNeighbor2[index];
+                reducedNetworkEdgeWeight1[reducedNetworkNEdges1 + index] =
+                        reducedNetworkEdgeWeight2[reducedNetworkNeighbor2[index]];
+                reducedNetworkEdgeWeight2[reducedNetworkNeighbor2[index]] = 0;
             }
             reducedNetworkNEdges1 += reducedNetworkNEdges2;
 
-            reducedNetwork.firstNeighborIndex[i + 1] = reducedNetworkNEdges1;
+            reducedNetwork.firstNeighborIndex[clusterId + 1] = reducedNetworkNEdges1;
         }
 
         reducedNetwork.neighbor = new int[reducedNetworkNEdges1];
