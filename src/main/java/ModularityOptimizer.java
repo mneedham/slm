@@ -28,17 +28,11 @@ public class ModularityOptimizer
 
                     @Override
                     Network createNetwork( int nNodes, int nEdges, int[] firstNeighborIndex, int[] neighbor,
-                            double[] edgeWeight, Map<Integer,Node> nodesMap )
+                            double[] edgeWeight, Map<Integer,Node> nodes )
                     {
-                        // nodeWeight = sum of incoming + outgoing relationships weights
 
-                        double[] nodeWeight = new double[nNodes];
-                        for ( Map.Entry<Integer,Node> entry : nodesMap.entrySet() )
-                        {
-                            nodeWeight[entry.getKey()] = entry.getValue().weight();
-                        }
-
-                        return new Network( nNodes, firstNeighborIndex, neighbor, edgeWeight, nodeWeight, nodesMap );
+                        return new Network( firstNeighborIndex, neighbor, edgeWeight, nodes );
+//                        return new Network( nNodes, firstNeighborIndex, neighbor, edgeWeight, nodeWeight, nodes );
                     }
 
                     @Override
@@ -67,7 +61,7 @@ public class ModularityOptimizer
                     Network createNetwork( int nNodes, int nEdges, int[] firstNeighborIndex, int[] neighbor,
                             double[] edgeWeight2, Map<Integer,Node> nodesMap )
                     {
-                        return new Network( nNodes, firstNeighborIndex, neighbor, edgeWeight2 );
+                        return new Network( firstNeighborIndex, neighbor, edgeWeight2 );
                     }
 
                     @Override
