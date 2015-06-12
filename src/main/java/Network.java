@@ -42,8 +42,8 @@ public class Network implements Cloneable, Serializable
     private int numberOfClusters;
     private int[] cluster;
 
-    private double[] clusterWeight;
-    private int[] numberNodesPerCluster;
+//    private double[] clusterWeight;
+//    private int[] numberNodesPerCluster;
     private int[][] nodePerCluster;
     private boolean clusteringStatsAvailable;
     private Map<Integer,Cluster> clusters;
@@ -634,7 +634,7 @@ public class Network implements Cloneable, Serializable
 
         for ( i = 0; i < numberOfClusters; i++ )
         {
-            qualityFunction -= clusterWeight[i] * clusterWeight[i] * resolution;
+            qualityFunction -= clusters.get(i).weight() * clusters.get(i).weight() * resolution;
         }
 
         qualityFunction /= totalEdgeWeight;
@@ -996,7 +996,7 @@ public class Network implements Cloneable, Serializable
 
         clusterSize = new ClusterSize[numberOfClusters];
         for ( i = 0; i < numberOfClusters; i++ )
-        { clusterSize[i] = new ClusterSize( i, orderByWeight ? clusterWeight[i] : numberNodesPerCluster[i] ); }
+        { clusterSize[i] = new ClusterSize( i, orderByWeight ? clusters.get(i).weight() : clusters.get(i).numberOfNodes() ); }
 
         Arrays.sort( clusterSize );
 
@@ -1079,10 +1079,8 @@ public class Network implements Cloneable, Serializable
 
     private void calcClusteringStats()
     {
-        int i, j;
-
         clusters = new HashMap<>();
-        for ( i = 0; i < numberOfNodes; i++ )
+        for ( int i = 0; i < numberOfNodes; i++ )
         {
             Node node = nodesMap.get( i );
 
@@ -1096,24 +1094,25 @@ public class Network implements Cloneable, Serializable
             cluster.addNode( node );
         }
 
-        clusterWeight = new double[numberOfClusters];
-        numberNodesPerCluster = new int[numberOfClusters];
+//        clusterWeight = new double[numberOfClusters];
+//        numberNodesPerCluster = new int[numberOfClusters];
         nodePerCluster = new int[numberOfClusters][];
 
         //uses clusters map
         for ( Map.Entry<Integer,Cluster> entry : clusters.entrySet() )
         {
             int numberOfNodes = entry.getValue().numberOfNodes();
-            clusterWeight[entry.getKey()] = entry.getValue().weight();
-            numberNodesPerCluster[entry.getKey()] = numberOfNodes;
+//            clusterWeight[entry.getKey()] = entry.getValue().weight();
+//            numberNodesPerCluster[entry.getKey()] = numberOfNodes;
 
-            nodePerCluster[entry.getKey()] = new int[numberOfNodes];
-            int index = 0;
-            for ( Node node : entry.getValue().nodes )
-            {
-                nodePerCluster[entry.getKey()][index] = node.nodeId;
-                index++;
-            }
+            nodePerCluster[entry.getKey()] = entry.getValue().nodesIds();
+//            nodePerCluster[entry.getKey()] = new int[numberOfNodes];
+//            int index = 0;
+//            for ( Node node : entry.getValue().nodes )
+//            {
+//                nodePerCluster[entry.getKey()][index] = node.nodeId;
+//                index++;
+//            }
         }
 
         clusteringStatsAvailable = true;
@@ -1121,8 +1120,8 @@ public class Network implements Cloneable, Serializable
 
     private void deleteClusteringStats()
     {
-        clusterWeight = null;
-        numberNodesPerCluster = null;
+//        clusterWeight = null;
+//        numberNodesPerCluster = null;
         nodePerCluster = null;
 
         clusteringStatsAvailable = false;
@@ -1142,9 +1141,21 @@ public class Network implements Cloneable, Serializable
 
         public void addWeight( double weight )
         {
-
             this.weight += weight;
         }
+
+
+        public int[] nodesIds() {
+            int[] nodesArray = new int[nodes.size()];
+            int index = 0;
+            for ( Node node : nodes )
+            {
+                nodesArray[index] = node.nodeId;
+                index++;
+            }
+            return nodesArray;
+        }
+
 
         public void removeWeight( double weight )
         {
