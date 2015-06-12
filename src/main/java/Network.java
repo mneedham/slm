@@ -330,17 +330,6 @@ public class Network implements Cloneable, Serializable
         }
     }
 
-    public void save( String fileName ) throws IOException
-    {
-        ObjectOutputStream objectOutputStream;
-
-        objectOutputStream = new ObjectOutputStream( new FileOutputStream( fileName ) );
-
-        objectOutputStream.writeObject( this );
-
-        objectOutputStream.close();
-    }
-
     public int getNNodes()
     {
         return numberOfNodes;
@@ -349,24 +338,6 @@ public class Network implements Cloneable, Serializable
     public int getNEdges()
     {
         return neighbor.length;
-    }
-
-    public int[][] getEdges()
-    {
-        int[][] edge;
-        int i, j;
-
-        edge = new int[2][neighbor.length];
-        for ( i = 0; i < numberOfNodes; i++ )
-        {
-            for ( j = firstNeighborIndex[i]; j < firstNeighborIndex[i + 1]; j++ )
-            {
-                edge[0][j] = i;
-                edge[1][j] = neighbor[j];
-            }
-        }
-
-        return edge;
     }
 
     public double getTotalEdgeWeight()
@@ -388,18 +359,6 @@ public class Network implements Cloneable, Serializable
         return edgeWeight;
     }
 
-    public double getTotalNodeWeight()
-    {
-        double totalNodeWeight;
-        int i;
-
-        totalNodeWeight = 0;
-        for ( i = 0; i < numberOfNodes; i++ )
-        { totalNodeWeight += nodeWeight( i ); }
-
-        return totalNodeWeight;
-    }
-
     public double[] getNodeWeights()
     {
         return nodeWeight;
@@ -413,39 +372,6 @@ public class Network implements Cloneable, Serializable
     public int[] getClusters()
     {
         return cluster;
-    }
-
-    public double[] getClusterWeights()
-    {
-        if ( cluster == null )
-        { return null; }
-
-        if ( !clusteringStatsAvailable )
-        { calcClusteringStats(); }
-
-        return clusterWeight;
-    }
-
-    public int[] getNNodesPerCluster()
-    {
-        if ( cluster == null )
-        { return null; }
-
-        if ( !clusteringStatsAvailable )
-        { calcClusteringStats(); }
-
-        return numberNodesPerCluster;
-    }
-
-    public int[][] getNodesPerCluster()
-    {
-        if ( cluster == null )
-        { return null; }
-
-        if ( !clusteringStatsAvailable )
-        { calcClusteringStats(); }
-
-        return nodePerCluster;
     }
 
     public void setClusters( int[] cluster )
@@ -549,67 +475,6 @@ public class Network implements Cloneable, Serializable
         numberOfClusters = i + 1;
 
         deleteClusteringStats();
-    }
-
-    public boolean removeCluster( int cluster )
-    {
-        boolean removed;
-
-        if ( this.cluster == null )
-        { return false; }
-
-        if ( !clusteringStatsAvailable )
-        { calcClusteringStats(); }
-
-        removed = removeCluster2( cluster );
-
-        deleteClusteringStats();
-
-        return removed;
-    }
-
-    public void removeSmallClusters( double minClusterWeight )
-    {
-        boolean[] ignore;
-        double minClusterWeight2;
-        int i, smallestCluster;
-        ReducedNetwork reducedNetwork;
-
-        if ( cluster == null )
-        { return; }
-
-        reducedNetwork = calculateReducedNetwork();
-        reducedNetwork.initSingletonClusters();
-        reducedNetwork.calcClusteringStats();
-
-        ignore = new boolean[numberOfClusters];
-        do
-        {
-            smallestCluster = -1;
-            minClusterWeight2 = minClusterWeight;
-            for ( i = 0; i < reducedNetwork.numberOfClusters; i++ )
-            {
-                if ( (!ignore[i]) && (reducedNetwork.clusterWeight[i] < minClusterWeight2) )
-                {
-                    smallestCluster = i;
-                    minClusterWeight2 = reducedNetwork.clusterWeight[i];
-                }
-            }
-
-            if ( smallestCluster >= 0 )
-            {
-                reducedNetwork.removeCluster2( smallestCluster );
-                ignore[smallestCluster] = true;
-            }
-        }
-        while ( smallestCluster >= 0 );
-
-        mergeClusters( reducedNetwork.getClusters() );
-    }
-
-    public void orderClustersByWeight()
-    {
-        orderClusters( true );
     }
 
     public void orderClustersByNNodes()
@@ -743,31 +608,6 @@ public class Network implements Cloneable, Serializable
         return reducedNetwork;
     }
 
-    public Network getLargestConnectedComponent()
-    {
-        double maxClusterWeight;
-        int i, largestCluster;
-        Network clonedNetwork;
-
-        clonedNetwork = (Network) clone();
-
-        clonedNetwork.findConnectedComponents();
-
-        clonedNetwork.calcClusteringStats();
-        largestCluster = -1;
-        maxClusterWeight = -1;
-        for ( i = 0; i < clonedNetwork.numberOfClusters; i++ )
-        {
-            if ( clonedNetwork.clusterWeight[i] > maxClusterWeight )
-            {
-                largestCluster = i;
-                maxClusterWeight = clonedNetwork.clusterWeight[i];
-            }
-        }
-
-        return clonedNetwork.createSubnetwork( largestCluster );
-    }
-
     public double calcQualityFunction( double resolution )
     {
         double qualityFunction, totalEdgeWeight;
@@ -800,11 +640,6 @@ public class Network implements Cloneable, Serializable
         qualityFunction /= totalEdgeWeight;
 
         return qualityFunction;
-    }
-
-    public boolean runLocalMovingAlgorithm( double resolution )
-    {
-        return runLocalMovingAlgorithm( resolution, new Random() );
     }
 
     public boolean runLocalMovingAlgorithm( double resolution, Random random )
@@ -983,11 +818,6 @@ public class Network implements Cloneable, Serializable
         return numberOfNodesPerCluster;
     }
 
-    public boolean runLouvainAlgorithm( double resolution )
-    {
-        return runLouvainAlgorithm( resolution, new Random() );
-    }
-
     public boolean runLouvainAlgorithm( double resolution, Random random )
     {
         boolean update, update2;
@@ -1015,11 +845,6 @@ public class Network implements Cloneable, Serializable
         deleteClusteringStats();
 
         return update;
-    }
-
-    public boolean runLouvainAlgorithmWithMultilevelRefinement( double resolution )
-    {
-        return runLouvainAlgorithmWithMultilevelRefinement( resolution, new Random() );
     }
 
     public boolean runLouvainAlgorithmWithMultilevelRefinement( double resolution, Random random )
@@ -1051,11 +876,6 @@ public class Network implements Cloneable, Serializable
         deleteClusteringStats();
 
         return update;
-    }
-
-    public boolean runSmartLocalMovingAlgorithm( double resolution )
-    {
-        return runSmartLocalMovingAlgorithm( resolution, new Random() );
     }
 
     public boolean runSmartLocalMovingAlgorithm( double resolution, Random random )
@@ -1143,63 +963,6 @@ public class Network implements Cloneable, Serializable
         deleteClusteringStats();
 
         out.defaultWriteObject();
-    }
-
-    private boolean removeCluster2( int cluster )
-    {
-        double maxQualityFunction, qualityFunction;
-        double[] reducedNetworkEdgeWeight;
-        int bestCluster, i, j;
-
-        reducedNetworkEdgeWeight = new double[numberOfClusters];
-        for ( i = 0; i < numberOfNodes; i++ )
-        {
-            if ( this.cluster[i] == cluster )
-            {
-                for ( j = firstNeighborIndex[i]; j < firstNeighborIndex[i + 1]; j++ )
-                { reducedNetworkEdgeWeight[this.cluster[neighbor[j]]] += edgeWeight[j]; }
-            }
-        }
-
-        bestCluster = -1;
-        maxQualityFunction = 0;
-        for ( i = 0; i < numberOfClusters; i++ )
-        {
-            if ( (i != cluster) && (clusterWeight[i] > 0) )
-            {
-                qualityFunction = reducedNetworkEdgeWeight[i] / clusterWeight[i];
-                if ( qualityFunction > maxQualityFunction )
-                {
-                    bestCluster = i;
-                    maxQualityFunction = qualityFunction;
-                }
-            }
-        }
-
-        if ( bestCluster == -1 )
-        { return false; }
-
-        for ( i = 0; i < numberOfNodes; i++ )
-        {
-            if ( this.cluster[i] == cluster )
-            { this.cluster[i] = bestCluster; }
-        }
-
-        clusterWeight[bestCluster] += clusterWeight[cluster];
-        clusterWeight[cluster] = 0;
-
-        if ( cluster == numberOfClusters - 1 )
-        {
-            i = 0;
-            for ( j = 0; j < numberOfNodes; j++ )
-            {
-                if ( this.cluster[j] > i )
-                { i = this.cluster[j]; }
-            }
-            numberOfClusters = i + 1;
-        }
-
-        return true;
     }
 
     private void orderClusters( boolean orderByWeight )
