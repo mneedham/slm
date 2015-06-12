@@ -16,10 +16,14 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import static java.lang.Double.parseDouble;
 import static java.lang.Integer.parseInt;
@@ -34,6 +38,7 @@ public class Network implements Cloneable, Serializable
         int nodeId;
         List<Relationship> in;
         List<Relationship> out;
+        private int cluster;
 
         public Node( int nodeId )
         {
@@ -71,6 +76,16 @@ public class Network implements Cloneable, Serializable
                 weight += relationship.weight;
             }
             return weight;
+        }
+
+        public void setCluster( int cluster )
+        {
+            this.cluster = cluster;
+        }
+
+        public int getCluster()
+        {
+            return cluster;
         }
     }
 
@@ -271,7 +286,9 @@ public class Network implements Cloneable, Serializable
         int[] neighbor;
 
         List<Relationship> relationships = new ArrayList<>( 10_000 );
-        Map<Integer,Node> nodesMap = new HashMap<>( 10_000 );
+        Map<Integer,Node> nodesMap = new TreeMap<Integer,Node>(  )
+        {
+        };
         try ( BufferedReader bufferedReader = new BufferedReader( new FileReader( fileName ) ) )
         {
             String line;
@@ -857,7 +874,7 @@ public class Network implements Cloneable, Serializable
         }
 
         boolean update = false;
-        double[] clusterWeight = calculateClusterWeight( numberOfNodes, cluster, nodeWeight );
+        double[] clusterWeight = calculateClusterWeight( numberOfNodes, cluster, getNodeWeights() );
         int[] numberOfNodesPerCluster = calculateNumberOfNodesPerCluster( numberOfNodes, cluster );
 
         int numberUnusedClusters = 0;
@@ -893,7 +910,7 @@ public class Network implements Cloneable, Serializable
                 edgeWeightsPointingToCluster[neighbourClusterId] += edgeWeight[k];
             }
 
-            clusterWeight[cluster[nodeId]] -= nodeWeight(nodeId);
+            clusterWeight[cluster[nodeId]] -= nodeWeight( nodeId );
             numberOfNodesPerCluster[cluster[nodeId]]--;
             if ( numberOfNodesPerCluster[cluster[nodeId]] == 0 )
             {
@@ -910,7 +927,7 @@ public class Network implements Cloneable, Serializable
             {
                 int clusterId = neighboringCluster[neighbouringClusterIndex];
                 qualityFunction = edgeWeightsPointingToCluster[clusterId] -
-                                  nodeWeight(nodeId) * clusterWeight[clusterId] * resolution;
+                                  nodeWeight( nodeId ) * clusterWeight[clusterId] * resolution;
                 if ( (qualityFunction > maxQualityFunction) ||
                      ((qualityFunction == maxQualityFunction) && (clusterId < bestCluster)) )
                 {
@@ -925,7 +942,7 @@ public class Network implements Cloneable, Serializable
                 numberUnusedClusters--;
             }
 
-            clusterWeight[bestCluster] += nodeWeight(nodeId);
+            clusterWeight[bestCluster] += nodeWeight( nodeId );
             numberOfNodesPerCluster[bestCluster]++;
             if ( bestCluster == cluster[nodeId] )
             {
@@ -934,6 +951,17 @@ public class Network implements Cloneable, Serializable
             else
             {
                 cluster[nodeId] = bestCluster;
+
+                if ( nodesMap != null )
+                {
+                    Node node = nodesMap.get( nodeId );
+                    if(node == null) {
+                        System.out.println( "nodeId = " + nodeId + " => " + nodesMap );
+                    } else {
+                        node.setCluster( bestCluster );
+                    }
+                }
+
                 numberStableNodes = 1;
                 update = true;
             }
@@ -995,13 +1023,19 @@ public class Network implements Cloneable, Serializable
         return numberOfNodesPerCluster;
     }
 
-    private double[] calculateClusterWeight( int nNodes, int[] cluster, double[] nodeWeight )
+    private double[] calculateClusterWeight( int numberOfNodes, int[] cluster, double[] nodeWeight )
     {
-        double[] clusterWeight = new double[nNodes];
-        for ( int i = 0; i < nNodes; i++ )
+        double[] clusterWeight = new double[numberOfNodes];
+        for ( int i = 0; i < numberOfNodes; i++ )
         {
             clusterWeight[cluster[i]] += nodeWeight[i];
         }
+
+//        for ( Map.Entry<Integer,Node> entry : nodesMap.entrySet() )
+//        {
+//            clusterWeight[cluster[entry.getKey()]] += entry.getValue().weight();
+//        }
+
         return clusterWeight;
     }
 
@@ -1104,7 +1138,23 @@ public class Network implements Cloneable, Serializable
             numberOfClusters = 0;
             for ( int subnetworkId = 0; subnetworkId < subnetworks.length; subnetworkId++ )
             {
+                // need to add the nodes map to the sub network
                 Network subnetwork = subnetworks[subnetworkId];
+
+                // this currently isn't being set on a reduced network
+                // that seems to behave differently though as I don't think the network represents actual nodes, but
+                // rather groups of them
+                if ( nodesMap != null )
+                {
+                    Map<Integer,Node> newNodesMap = new HashMap<>();
+                    for ( int nodeId : nodePerCluster[subnetworkId] )
+                    {
+                        Node node = nodesMap.get( nodeId );
+                        newNodesMap.put( nodeId, node );
+                    }
+                    subnetwork.nodesMap = newNodesMap;
+                }
+
                 subnetwork.initSingletonClusters();
                 subnetwork.runLocalMovingAlgorithm( resolution, random );
 
