@@ -41,10 +41,7 @@ public class Network implements Cloneable, Serializable
     private double[] nodeWeight;
     private int numberOfClusters;
     private int[] cluster;
-
-//    private double[] clusterWeight;
-//    private int[] numberNodesPerCluster;
-    private int[][] nodePerCluster;
+    
     private boolean clusteringStatsAvailable;
     private Map<Integer,Cluster> clusters;
 
@@ -563,9 +560,11 @@ public class Network implements Cloneable, Serializable
         for ( i = 0; i < numberOfClusters; i++ )
         {
             reducedNetworkNEdges2 = 0;
-            for ( j = 0; j < nodePerCluster[i].length; j++ )
+            for ( j = 0; j < clusters.get( i ).numberOfNodes(); j++ )
+//            for ( j = 0; j < nodePerCluster[i].length; j++ )
             {
-                k = nodePerCluster[i][j];
+                k = clusters.get( i ).nodesIds()[j];
+//                k = nodePerCluster[i][j];
 
                 for ( l = firstNeighborIndex[k]; l < firstNeighborIndex[k + 1]; l++ )
                 {
@@ -909,7 +908,7 @@ public class Network implements Cloneable, Serializable
                 if ( nodesMap != null )
                 {
                     Map<Integer,Node> newNodesMap = new HashMap<>();
-                    for ( int nodeId : nodePerCluster[subnetworkId] )
+                    for ( int nodeId : clusters.get(subnetworkId).nodesIds() )
                     {
                         Node node = nodesMap.get( nodeId );
                         newNodesMap.put( nodeId, node );
@@ -923,7 +922,7 @@ public class Network implements Cloneable, Serializable
                 int[] subnetworkCluster = subnetwork.getClusters();
                 for ( int nodeId = 0; nodeId < subnetworkCluster.length; nodeId++ )
                 {
-                    cluster[nodePerCluster[subnetworkId][nodeId]] = numberOfClusters + subnetworkCluster[nodeId];
+                    cluster[clusters.get(subnetworkId).nodesIds()[nodeId]] = numberOfClusters + subnetworkCluster[nodeId];
                 }
                 numberOfClusters += subnetwork.getNClusters();
             }
@@ -1022,7 +1021,8 @@ public class Network implements Cloneable, Serializable
 
         Network subnetwork = new Network();
 
-        int numberOfNodesInSubnetwork = nodePerCluster[clusterId].length;
+        int numberOfNodesInSubnetwork = clusters.get(clusterId).nodesIds().length;
+//        int numberOfNodesInSubnetwork = nodePerCluster[clusterId].length;
         subnetwork.numberOfNodes = numberOfNodesInSubnetwork;
 
         if ( numberOfNodesInSubnetwork == 1 )
@@ -1030,14 +1030,14 @@ public class Network implements Cloneable, Serializable
             subnetwork.firstNeighborIndex = new int[2];
             subnetwork.neighbor = new int[0];
             subnetwork.edgeWeight = new double[0];
-            subnetwork.nodeWeight = new double[]{nodeWeight( nodePerCluster[clusterId][0] )};
+            subnetwork.nodeWeight = new double[]{nodeWeight( clusters.get(clusterId).nodesIds()[0] )};
         }
         else
         {
             // creating a mapping from the top level Network node ids to our local sub network node ids
-            for ( int i = 0; i < nodePerCluster[clusterId].length; i++ )
+            for ( int i = 0; i < clusters.get(clusterId).nodesIds().length; i++ )
             {
-                subnetworkNode[nodePerCluster[clusterId][i]] = i;
+                subnetworkNode[clusters.get(clusterId).nodesIds()[i]] = i;
             }
 
             subnetwork.firstNeighborIndex = new int[numberOfNodesInSubnetwork + 1];
@@ -1046,7 +1046,7 @@ public class Network implements Cloneable, Serializable
             int subnetworkNEdges = 0;
             for ( int i = 0; i < numberOfNodesInSubnetwork; i++ )
             {
-                int nodeId = nodePerCluster[clusterId][i];
+                int nodeId = clusters.get(clusterId).nodesIds()[i];
 
                 // iterate all the neighbouring nodes of 'nodeId'
                 // firstNeighborIndex[nodeId] gives us this node
@@ -1094,35 +1094,11 @@ public class Network implements Cloneable, Serializable
             cluster.addNode( node );
         }
 
-//        clusterWeight = new double[numberOfClusters];
-//        numberNodesPerCluster = new int[numberOfClusters];
-        nodePerCluster = new int[numberOfClusters][];
-
-        //uses clusters map
-        for ( Map.Entry<Integer,Cluster> entry : clusters.entrySet() )
-        {
-            int numberOfNodes = entry.getValue().numberOfNodes();
-//            clusterWeight[entry.getKey()] = entry.getValue().weight();
-//            numberNodesPerCluster[entry.getKey()] = numberOfNodes;
-
-            nodePerCluster[entry.getKey()] = entry.getValue().nodesIds();
-//            nodePerCluster[entry.getKey()] = new int[numberOfNodes];
-//            int index = 0;
-//            for ( Node node : entry.getValue().nodes )
-//            {
-//                nodePerCluster[entry.getKey()][index] = node.nodeId;
-//                index++;
-//            }
-        }
-
         clusteringStatsAvailable = true;
     }
 
     private void deleteClusteringStats()
     {
-//        clusterWeight = null;
-//        numberNodesPerCluster = null;
-        nodePerCluster = null;
 
         clusteringStatsAvailable = false;
     }
