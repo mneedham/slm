@@ -28,18 +28,31 @@ public class ModularityOptimizer
 
                     @Override
                     Network createNetwork( int nNodes, int nEdges, int[] firstNeighborIndex, int[] neighbor,
-                            double[] edgeWeight, Map<Integer,Network.Node> nodesMap )
+                            double[] edgeWeight, Map<Integer,Node> nodesMap )
                     {
                         // nodeWeight = sum of incoming + outgoing relationships weights
 
                         double[] nodeWeight = new double[nNodes];
-                        for ( Map.Entry<Integer,Network.Node> entry : nodesMap.entrySet() )
+                        for ( Map.Entry<Integer,Node> entry : nodesMap.entrySet() )
                         {
                             nodeWeight[entry.getKey()] = entry.getValue().weight();
                         }
 
                         return new Network( nNodes, firstNeighborIndex, neighbor, edgeWeight, nodeWeight, nodesMap );
+                    }
 
+                    @Override
+                    ReducedNetwork createReducedNetwork( int nNodes, int nEdges, int[] firstNeighborIndex,
+                            int[] neighbor,
+                            double[] edgeWeight, Map<Integer,Node> nodesMap )
+                    {
+                        double[] nodeWeight = new double[nNodes];
+                        for ( Map.Entry<Integer,Node> entry : nodesMap.entrySet() )
+                        {
+                            nodeWeight[entry.getKey()] = entry.getValue().weight();
+                        }
+
+                        return new ReducedNetwork( nNodes, firstNeighborIndex, neighbor, edgeWeight, nodeWeight, nodesMap );
                     }
                 },
         Alternative( 2 )
@@ -52,9 +65,17 @@ public class ModularityOptimizer
 
                     @Override
                     Network createNetwork( int nNodes, int nEdges, int[] firstNeighborIndex, int[] neighbor,
-                            double[] edgeWeight2, Map<Integer,Network.Node> nodesMap )
+                            double[] edgeWeight2, Map<Integer,Node> nodesMap )
                     {
                         return new Network( nNodes, firstNeighborIndex, neighbor, edgeWeight2 );
+                    }
+
+                    @Override
+                    ReducedNetwork createReducedNetwork( int nNodes, int nEdges, int[] firstNeighborIndex,
+                            int[] neighbor,
+                            double[] edgeWeight2, Map<Integer,Node> nodesMap )
+                    {
+                        return new ReducedNetwork( nNodes, firstNeighborIndex, neighbor, edgeWeight2 );
                     }
                 };
 
@@ -77,7 +98,10 @@ public class ModularityOptimizer
         abstract double resolution( double resolution, Network network );
 
         abstract Network createNetwork( int nNodes, int nEdges, int[] firstNeighborIndex, int[] neighbor,
-                double[] edgeWeight2, Map<Integer,Network.Node> nodesMap );
+                double[] edgeWeight2, Map<Integer,Node> nodesMap );
+
+        abstract ReducedNetwork createReducedNetwork( int nNodes, int nEdges, int[] firstNeighborIndex, int[] neighbor,
+                double[] edgeWeight2, Map<Integer,Node> nodesMap );
     }
 
     public static void main( String[] args ) throws IOException
