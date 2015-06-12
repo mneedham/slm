@@ -874,7 +874,20 @@ public class Network implements Cloneable, Serializable
         }
 
         boolean update = false;
-        double[] clusterWeight = calculateClusterWeight( numberOfNodes, cluster, getNodeWeights() );
+
+        Map<Integer, Cluster> clusters = new HashMap<>(  );
+        for ( int i = 0; i < numberOfNodes; i++ )
+        {
+            int clusterId = this.cluster[i];
+            Cluster cluster = clusters.get( clusterId );
+            if ( cluster == null )
+            {
+                cluster = new Cluster( clusterId );
+                clusters.put( clusterId, cluster );
+            }
+            cluster.addWeight(nodeWeight[i]);
+        }
+
         int[] numberOfNodesPerCluster = calculateNumberOfNodesPerCluster( numberOfNodes, cluster );
 
         int numberUnusedClusters = 0;
@@ -910,7 +923,7 @@ public class Network implements Cloneable, Serializable
                 edgeWeightsPointingToCluster[neighbourClusterId] += edgeWeight[k];
             }
 
-            clusterWeight[cluster[nodeId]] -= nodeWeight( nodeId );
+            clusters.get(cluster[nodeId]).removeWeight( nodeWeight( nodeId ) );
             numberOfNodesPerCluster[cluster[nodeId]]--;
             if ( numberOfNodesPerCluster[cluster[nodeId]] == 0 )
             {
@@ -927,7 +940,7 @@ public class Network implements Cloneable, Serializable
             {
                 int clusterId = neighboringCluster[neighbouringClusterIndex];
                 qualityFunction = edgeWeightsPointingToCluster[clusterId] -
-                                  nodeWeight( nodeId ) * clusterWeight[clusterId] * resolution;
+                                  nodeWeight( nodeId ) * clusters.get( clusterId).weight * resolution;
                 if ( (qualityFunction > maxQualityFunction) ||
                      ((qualityFunction == maxQualityFunction) && (clusterId < bestCluster)) )
                 {
@@ -942,7 +955,7 @@ public class Network implements Cloneable, Serializable
                 numberUnusedClusters--;
             }
 
-            clusterWeight[bestCluster] += nodeWeight( nodeId );
+            clusters.get(bestCluster).addWeight( nodeWeight( nodeId ) );
             numberOfNodesPerCluster[bestCluster]++;
             if ( bestCluster == cluster[nodeId] )
             {
@@ -1409,5 +1422,28 @@ public class Network implements Cloneable, Serializable
         nodePerCluster = null;
 
         clusteringStatsAvailable = false;
+    }
+
+    private class Cluster
+    {
+        private int clusterId;
+        private double weight = 0.0;
+
+        public Cluster( int clusterId )
+        {
+
+            this.clusterId = clusterId;
+        }
+
+        public void addWeight( double weight )
+        {
+
+            this.weight += weight;
+        }
+
+        public void removeWeight( double weight )
+        {
+            this.weight -= weight;
+        }
     }
 }
