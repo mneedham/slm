@@ -8,7 +8,6 @@
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -27,42 +26,21 @@ import static java.lang.Integer.parseInt;
 
 public class Network implements Cloneable, Serializable
 {
-
-    private Map<Integer,Node> nodesMap;
-
-
     private static final long serialVersionUID = 1;
 
     private int numberOfNodes;
+
     private int[] firstNeighborIndex;
     private int[] neighbor;
     private double[] edgeWeight;
     private double totalEdgeWeightSelfLinks;
     private double[] nodeWeight;
     private int numberOfClusters;
-    private int[] cluster;
-    
     private boolean clusteringStatsAvailable;
-    private Map<Integer,Cluster> clusters;
 
-    public int[] getNeighbor()
-    {
-        return neighbor;
-    }
-
-    public static Network load( String fileName ) throws ClassNotFoundException, IOException
-    {
-        Network network;
-        ObjectInputStream objectInputStream;
-
-        objectInputStream = new ObjectInputStream( new FileInputStream( fileName ) );
-
-        network = (Network) objectInputStream.readObject();
-
-        objectInputStream.close();
-
-        return network;
-    }
+    private Map<Integer,Node> nodes;
+    private int[] cluster;
+    private Clusters clusters;
 
     public Network( int numberOfNodes, int[][] edge )
     {
@@ -80,12 +58,12 @@ public class Network implements Cloneable, Serializable
     }
 
     public Network( int numberOfNodes, int[][] edge, double[] edgeWeight, double[] nodeWeight, int[] cluster,
-            Map<Integer,Node> nodesMap )
+            Map<Integer,Node> nodes )
     {
-        this.nodesMap = nodesMap;
-        if ( nodesMap == null )
+        this.nodes = nodes;
+        if ( nodes == null )
         {
-            this.nodesMap = new HashMap<>();
+            this.nodes = new HashMap<>();
         }
 
 
@@ -156,15 +134,15 @@ public class Network implements Cloneable, Serializable
     }
 
     public Network( int numberOfNodes, int[] firstNeighborIndex, int[] neighbor, double[] edgeWeight,
-            double[] nodeWeight, Map<Integer,Node> nodesMap )
+            double[] nodeWeight, Map<Integer,Node> nodes )
     {
-        this( numberOfNodes, firstNeighborIndex, neighbor, edgeWeight, nodeWeight, null, nodesMap );
+        this( numberOfNodes, firstNeighborIndex, neighbor, edgeWeight, nodeWeight, null, nodes );
     }
 
     public Network( int numberOfNodes, int[] firstNeighborIndex, int[] neighbor, double[] edgeWeight,
-            double[] nodeWeight, int[] cluster, Map<Integer,Node> nodesMap )
+            double[] nodeWeight, int[] cluster, Map<Integer,Node> nodes )
     {
-        this.nodesMap = nodesMap;
+        this.nodes = nodes;
 
         int i, nEdges;
 
@@ -392,57 +370,6 @@ public class Network implements Cloneable, Serializable
         deleteClusteringStats();
     }
 
-    public void findConnectedComponents()
-    {
-        int i, j;
-        int[] neighborIndex, node;
-
-        cluster = new int[numberOfNodes];
-        init();
-
-        node = new int[numberOfNodes];
-        neighborIndex = new int[numberOfNodes];
-
-        numberOfClusters = 0;
-        for ( i = 0; i < numberOfNodes; i++ )
-        {
-            if ( cluster[i] == -1 )
-            {
-                cluster[i] = numberOfClusters;
-                node[0] = i;
-                neighborIndex[0] = firstNeighborIndex[i];
-                j = 0;
-                do
-                {
-                    if ( neighborIndex[j] == firstNeighborIndex[node[j] + 1] )
-                    { j--; }
-                    else if ( cluster[neighbor[neighborIndex[j]]] == -1 )
-                    {
-                        cluster[neighbor[neighborIndex[j]]] = numberOfClusters;
-                        node[j + 1] = neighbor[neighborIndex[j]];
-                        neighborIndex[j + 1] = firstNeighborIndex[node[j + 1]];
-                        neighborIndex[j]++;
-                        j++;
-                    }
-                    else
-                    { neighborIndex[j]++; }
-                }
-                while ( j >= 0 );
-
-                numberOfClusters++;
-            }
-        }
-
-        deleteClusteringStats();
-    }
-
-    private void init()
-    {
-        int i;
-        for ( i = 0; i < numberOfNodes; i++ )
-        { cluster[i] = -1; }
-    }
-
     private static void print( int[] items )
     {
         for ( int item : items )
@@ -479,28 +406,6 @@ public class Network implements Cloneable, Serializable
         orderClusters( false );
     }
 
-    public Network createSubnetwork( int clusterId )
-    {
-        double[] subnetworkEdgeWeight;
-        int[] subnetworkNeighbor, subnetworkNode;
-
-        if ( this.cluster == null )
-        {
-            return null;
-        }
-
-        if ( !clusteringStatsAvailable )
-        {
-            calcClusteringStats();
-        }
-
-        subnetworkNode = new int[numberOfNodes];
-        subnetworkNeighbor = new int[neighbor.length];
-        subnetworkEdgeWeight = new double[edgeWeight.length];
-
-        return createSubnetwork( clusterId, subnetworkNode, subnetworkNeighbor, subnetworkEdgeWeight );
-    }
-
     public Network[] createSubnetworks()
     {
         if ( cluster == null )
@@ -520,8 +425,7 @@ public class Network implements Cloneable, Serializable
 
         for ( int clusterId = 0; clusterId < numberOfClusters; clusterId++ )
         {
-            subnetwork[clusterId] =
-                    createSubnetwork( clusterId, subnetworkNode, subnetworkNeighbor, subnetworkEdgeWeight );
+            subnetwork[clusterId] = createSubnetwork( clusterId, subnetworkNode, subnetworkNeighbor, subnetworkEdgeWeight );
         }
 
         return subnetwork;
@@ -613,10 +517,14 @@ public class Network implements Cloneable, Serializable
         int i, j, k;
 
         if ( cluster == null )
-        { return Double.NaN; }
+        {
+            return Double.NaN;
+        }
 
         if ( !clusteringStatsAvailable )
-        { calcClusteringStats(); }
+        {
+            calcClusteringStats();
+        }
 
         qualityFunction = totalEdgeWeightSelfLinks;
         totalEdgeWeight = totalEdgeWeightSelfLinks;
@@ -626,7 +534,9 @@ public class Network implements Cloneable, Serializable
             for ( k = firstNeighborIndex[i]; k < firstNeighborIndex[i + 1]; k++ )
             {
                 if ( cluster[neighbor[k]] == j )
-                { qualityFunction += edgeWeight[k]; }
+                {
+                    qualityFunction += edgeWeight[k];
+                }
                 totalEdgeWeight += edgeWeight[k];
             }
         }
@@ -743,12 +653,12 @@ public class Network implements Cloneable, Serializable
             {
                 cluster[nodeId] = bestCluster;
 
-                if ( nodesMap != null )
+                if ( nodes != null )
                 {
-                    Node node = nodesMap.get( nodeId );
+                    Node node = nodes.get( nodeId );
                     if ( node == null )
                     {
-//                        System.out.println( "nodeId = " + nodeId + " => " + nodesMap );
+//                        System.out.println( "nodeId = " + nodeId + " => " + nodes );
                     }
                     else
                     {
@@ -905,15 +815,15 @@ public class Network implements Cloneable, Serializable
                 // this currently isn't being set on a reduced network
                 // that seems to behave differently though as I don't think the network represents actual nodes, but
                 // rather groups of them
-                if ( nodesMap != null )
+                if ( nodes != null )
                 {
                     Map<Integer,Node> newNodesMap = new HashMap<>();
                     for ( int nodeId : clusters.get(subnetworkId).nodesIds() )
                     {
-                        Node node = nodesMap.get( nodeId );
+                        Node node = nodes.get( nodeId );
                         newNodesMap.put( nodeId, node );
                     }
-                    subnetwork.nodesMap = newNodesMap;
+                    subnetwork.nodes = newNodesMap;
                 }
 
                 subnetwork.initSingletonClusters();
@@ -1079,12 +989,12 @@ public class Network implements Cloneable, Serializable
 
     private void calcClusteringStats()
     {
-        clusters = new HashMap<>();
+        clusters = new Clusters(  );
         for ( int i = 0; i < numberOfNodes; i++ )
         {
-            Node node = nodesMap.get( i );
-
+            Node node = nodes.get( i );
             int clusterId = this.cluster[i];
+
             Cluster cluster = clusters.get( clusterId );
             if ( cluster == null )
             {
@@ -1099,11 +1009,10 @@ public class Network implements Cloneable, Serializable
 
     private void deleteClusteringStats()
     {
-
         clusteringStatsAvailable = false;
     }
 
-    private class Cluster
+     class Cluster
     {
         private int clusterId;
         private double weight = 0.0;
@@ -1111,7 +1020,6 @@ public class Network implements Cloneable, Serializable
 
         public Cluster( int clusterId )
         {
-
             this.clusterId = clusterId;
         }
 
@@ -1121,7 +1029,8 @@ public class Network implements Cloneable, Serializable
         }
 
 
-        public int[] nodesIds() {
+        public int[] nodesIds()
+        {
             int[] nodesArray = new int[nodes.size()];
             int index = 0;
             for ( Node node : nodes )
@@ -1156,6 +1065,11 @@ public class Network implements Cloneable, Serializable
         public int numberOfNodes()
         {
             return nodes.size();
+        }
+
+        public List<Node> nodes()
+        {
+            return nodes;
         }
     }
 }
