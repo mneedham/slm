@@ -175,9 +175,7 @@ public class Network implements Cloneable, Serializable
         int[] neighbor;
 
         List<Relationship> relationships = new ArrayList<>( 10_000 );
-        Map<Integer,Node> nodesMap = new TreeMap<Integer,Node>()
-        {
-        };
+        Map<Integer,Node> nodes = new TreeMap<Integer,Node>();
         try ( BufferedReader bufferedReader = new BufferedReader( new FileReader( fileName ) ) )
         {
             String line;
@@ -187,18 +185,18 @@ public class Network implements Cloneable, Serializable
                 int sourceId = parseInt( parts[0] );
                 int destinationId = parseInt( parts[1] );
 
-                Node source = nodesMap.get( sourceId );
+                Node source = nodes.get( sourceId );
                 if ( source == null )
                 {
                     source = new Node( sourceId );
-                    nodesMap.put( sourceId, source );
+                    nodes.put( sourceId, source );
                 }
 
-                Node destination = nodesMap.get( destinationId );
+                Node destination = nodes.get( destinationId );
                 if ( destination == null )
                 {
                     destination = new Node( destinationId );
-                    nodesMap.put( destinationId, destination );
+                    nodes.put( destinationId, destination );
                 }
                 double weight = (parts.length > 2) ? parseDouble( parts[2] ) : 1;
                 destination.in( source, weight );
@@ -208,8 +206,8 @@ public class Network implements Cloneable, Serializable
             }
         }
 
-        int numberOfNodes = nodesMap.size();
-        int[] degree = degree( nodesMap );
+        int numberOfNodes = nodes.size();
+        int[] degree = degree( nodes );
         int[] firstNeighborIndex = new int[numberOfNodes + 1];
         nEdges = 0;
         for ( i = 0; i < numberOfNodes; i++ )
@@ -240,8 +238,7 @@ public class Network implements Cloneable, Serializable
             }
         }
 
-        return modularityFunction.createNetwork( numberOfNodes, nEdges, firstNeighborIndex, neighbor, edgeWeight,
-                nodesMap );
+        return modularityFunction.createNetwork( numberOfNodes, nEdges, firstNeighborIndex, neighbor, edgeWeight, nodes );
     }
 
     private static int[] degree( Map<Integer,Node> nodesMap )
@@ -436,10 +433,8 @@ public class Network implements Cloneable, Serializable
         {
             reducedNetworkNEdges2 = 0;
             for ( j = 0; j < clusters.get( i ).numberOfNodes(); j++ )
-//            for ( j = 0; j < nodePerCluster[i].length; j++ )
             {
                 k = clusters.get( i ).nodesIds()[j];
-//                k = nodePerCluster[i][j];
 
                 for ( l = firstNeighborIndex[k]; l < firstNeighborIndex[k + 1]; l++ )
                 {
@@ -570,7 +565,6 @@ public class Network implements Cloneable, Serializable
         do
         {
             int nodeId = nodesInRandomOrder[i];
-
             int numberOfNeighbouringClusters = 0;
             for ( int k = firstNeighborIndex[nodeId]; k < firstNeighborIndex[nodeId + 1]; k++ )
             {
@@ -934,6 +928,18 @@ public class Network implements Cloneable, Serializable
             for ( int i = 0; i < numberOfNodesInSubnetwork; i++ )
             {
                 int nodeId = clusters.get(clusterId).nodesIds()[i];
+
+//                for ( Relationship relationship : nodes.get(nodeId).relationships() )
+//                {
+//                    int otherNodeId = relationship.otherNode( nodeId );
+//                    if ( clusters.findClusterId( otherNodeId ) == clusterId )
+//                    {
+//                        subnetworkNeighbor[subnetworkNEdges] = otherNodeId;
+//                        subnetworkEdgeWeight[subnetworkNEdges] = relationship.getWeight();
+//                        subnetworkNEdges++;
+//                    }
+//                }
+
 
                 // iterate all the neighbouring nodes of 'nodeId'
                 // firstNeighborIndex[nodeId] gives us this node
