@@ -50,4 +50,28 @@ public class Clusters
 
         return -1;
     }
+
+    public boolean inSameCluster( int neighborNodeId, int nodeId )
+    {
+        int neighborCluster = -1;
+        int nodeCluster = -1;
+
+        for ( Map.Entry<Integer,Network.Cluster> entry : clusters.entrySet() )
+        {
+            for ( Node node : entry.getValue().nodes() )
+            {
+                if ( node.nodeId == nodeId )
+                {
+                    nodeCluster = entry.getKey();
+                }
+
+                if ( node.nodeId == neighborNodeId )
+                {
+                    neighborCluster = entry.getKey();
+                }
+            }
+        }
+
+        return neighborCluster != -1 && nodeCluster != -1 && (nodeCluster == neighborCluster);
+    }
 }

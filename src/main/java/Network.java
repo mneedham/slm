@@ -510,7 +510,7 @@ public class Network implements Cloneable, Serializable
     public double calcQualityFunction( double resolution )
     {
         double qualityFunction, totalEdgeWeight;
-        int i, j, k;
+        int  j, neighborNodeId;
 
         if ( cluster == null )
         {
@@ -524,22 +524,21 @@ public class Network implements Cloneable, Serializable
 
         qualityFunction = totalEdgeWeightSelfLinks;
         totalEdgeWeight = totalEdgeWeightSelfLinks;
-        for ( i = 0; i < nodes.size(); i++ )
+        for ( int nodeid = 0; nodeid < nodes.size(); nodeid++ )
         {
-            j = cluster[i];
-            for ( k = firstNeighborIndex[i]; k < firstNeighborIndex[i + 1]; k++ )
+            for ( neighborNodeId = firstNeighborIndex[nodeid]; neighborNodeId < firstNeighborIndex[nodeid + 1]; neighborNodeId++ )
             {
-                if ( cluster[neighbor[k]] == j )
+                if ( clusters.inSameCluster(neighborNodeId, nodeid) )
                 {
-                    qualityFunction += edgeWeight[k];
+                    qualityFunction += edgeWeight[neighborNodeId];
                 }
-                totalEdgeWeight += edgeWeight[k];
+                totalEdgeWeight += edgeWeight[neighborNodeId];
             }
         }
 
-        for ( i = 0; i < numberOfClusters; i++ )
+        for ( int clusterId = 0; clusterId < numberOfClusters; clusterId++ )
         {
-            qualityFunction -= clusters.get(i).weight() * clusters.get(i).weight() * resolution;
+            qualityFunction -= clusters.get(clusterId).weight() * clusters.get(clusterId).weight() * resolution;
         }
 
         qualityFunction /= totalEdgeWeight;
@@ -692,7 +691,13 @@ public class Network implements Cloneable, Serializable
 
     private double nodeWeight( int nodeId )
     {
-        return nodeWeight[nodeId];
+//        System.out.println( "nodeId = " + nodeId + " " + nodes );
+//        double direct = nodes.get( nodeId ).weight();
+        double viaNodeWeight = nodeWeight[nodeId];
+
+//        System.out.println( "direct = " + direct + " - " + viaNodeWeight );
+
+        return viaNodeWeight;
     }
 
     private int[] nodesInRandomOrder( int numberOfNodes, Random random )
