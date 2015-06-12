@@ -196,33 +196,6 @@ public class ReducedNetwork implements Cloneable, Serializable
         setClusters( cluster );
     }
 
-    static class Relationship
-    {
-        private final int source;
-        private final int destination;
-        private double weight;
-
-        Relationship( int source, int destination, double weight )
-        {
-
-            this.source = source;
-            this.destination = destination;
-            this.weight = weight;
-        }
-
-        static Relationship from( String line )
-        {
-            String[] splittedLine = line.split( "\t" );
-            double weight = (splittedLine.length > 2) ? parseDouble( splittedLine[2] ) : 1;
-
-            return new Relationship( parseInt( splittedLine[0] ), parseInt( splittedLine[1] ), weight );
-        }
-
-        public double weight()
-        {
-            return weight;
-        }
-    }
 
     public static ReducedNetwork create( String fileName, ModularityOptimizer.ModularityFunction modularityFunction )
             throws IOException
@@ -283,17 +256,17 @@ public class ReducedNetwork implements Cloneable, Serializable
 
         for ( Relationship relationship : relationships )
         {
-            if ( relationship.source < relationship.destination )
+            if ( relationship.getSource() < relationship.getDestination() )
             {
-                int j = firstNeighborIndex[relationship.source] + degree[relationship.source];
-                neighbor[j] = relationship.destination;
-                edgeWeight[j] = relationship.weight;
-                degree[relationship.source]++;
+                int j = firstNeighborIndex[relationship.getSource()] + degree[relationship.getSource()];
+                neighbor[j] = relationship.getDestination();
+                edgeWeight[j] = relationship.getWeight();
+                degree[relationship.getSource()]++;
 
-                j = firstNeighborIndex[relationship.destination] + degree[relationship.destination];
-                neighbor[j] = relationship.source;
-                edgeWeight[j] = relationship.weight;
-                degree[relationship.destination]++;
+                j = firstNeighborIndex[relationship.getDestination()] + degree[relationship.getDestination()];
+                neighbor[j] = relationship.getSource();
+                edgeWeight[j] = relationship.getWeight();
+                degree[relationship.getDestination()]++;
             }
         }
 

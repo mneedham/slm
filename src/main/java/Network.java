@@ -7,10 +7,8 @@
  */
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -169,29 +167,6 @@ public class Network implements Cloneable, Serializable
         setClusters( cluster );
     }
 
-    static class Relationship
-    {
-        private final int source;
-        private final int destination;
-        private double weight;
-
-        Relationship( int source, int destination, double weight )
-        {
-
-            this.source = source;
-            this.destination = destination;
-            this.weight = weight;
-        }
-
-        static Relationship from( String line )
-        {
-            String[] splittedLine = line.split( "\t" );
-            double weight = (splittedLine.length > 2) ? parseDouble( splittedLine[2] ) : 1;
-
-            return new Relationship( parseInt( splittedLine[0] ), parseInt( splittedLine[1] ), weight );
-        }
-    }
-
     public static Network create( String fileName, ModularityOptimizer.ModularityFunction modularityFunction )
             throws IOException
     {
@@ -251,17 +226,17 @@ public class Network implements Cloneable, Serializable
 
         for ( Relationship relationship : relationships )
         {
-            if ( relationship.source < relationship.destination )
+            if ( relationship.getSource() < relationship.getDestination() )
             {
-                int j = firstNeighborIndex[relationship.source] + degree[relationship.source];
-                neighbor[j] = relationship.destination;
-                edgeWeight[j] = relationship.weight;
-                degree[relationship.source]++;
+                int j = firstNeighborIndex[relationship.getSource()] + degree[relationship.getSource()];
+                neighbor[j] = relationship.getDestination();
+                edgeWeight[j] = relationship.getWeight();
+                degree[relationship.getSource()]++;
 
-                j = firstNeighborIndex[relationship.destination] + degree[relationship.destination];
-                neighbor[j] = relationship.source;
-                edgeWeight[j] = relationship.weight;
-                degree[relationship.destination]++;
+                j = firstNeighborIndex[relationship.getDestination()] + degree[relationship.getDestination()];
+                neighbor[j] = relationship.getSource();
+                edgeWeight[j] = relationship.getWeight();
+                degree[relationship.getDestination()]++;
             }
         }
 
@@ -510,7 +485,6 @@ public class Network implements Cloneable, Serializable
     public double calcQualityFunction( double resolution )
     {
         double qualityFunction, totalEdgeWeight;
-        int  j, neighborNodeId;
 
         if ( cluster == null )
         {
@@ -524,15 +498,18 @@ public class Network implements Cloneable, Serializable
 
         qualityFunction = totalEdgeWeightSelfLinks;
         totalEdgeWeight = totalEdgeWeightSelfLinks;
-        for ( int nodeid = 0; nodeid < nodes.size(); nodeid++ )
+
+        for ( Map.Entry<Integer,Node> entry : nodes.entrySet() )
         {
-            for ( neighborNodeId = firstNeighborIndex[nodeid]; neighborNodeId < firstNeighborIndex[nodeid + 1]; neighborNodeId++ )
+            int clusterId = clusters.findClusterId( entry.getKey() );
+            for ( Relationship relationship : entry.getValue().relationships() )
             {
-                if ( clusters.inSameCluster(neighborNodeId, nodeid) )
+                int otherNodeId = relationship.otherNode( entry.getKey() );
+                if ( clusters.findClusterId( otherNodeId ) == clusterId )
                 {
-                    qualityFunction += edgeWeight[neighborNodeId];
+                    qualityFunction += relationship.getWeight();
                 }
-                totalEdgeWeight += edgeWeight[neighborNodeId];
+                totalEdgeWeight += relationship.getWeight();
             }
         }
 

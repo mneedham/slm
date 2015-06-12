@@ -4,8 +4,8 @@ import java.util.List;
 public class Node
 {
     int nodeId;
-    List<ReducedNetwork.Relationship> in;
-    List<ReducedNetwork.Relationship> out;
+    List<Relationship> in;
+    List<Relationship> out;
     private int cluster;
 
     public Node( int nodeId )
@@ -17,13 +17,13 @@ public class Node
 
     public Node in( Node source, double weight )
     {
-        in.add( new ReducedNetwork.Relationship( source.nodeId, this.nodeId, weight ) );
+        in.add( new Relationship( source.nodeId, this.nodeId, weight ) );
         return this;
     }
 
     public Node out( Node destination, double weight )
     {
-        out.add( new ReducedNetwork.Relationship( this.nodeId, destination.nodeId, weight ) );
+        out.add( new Relationship( this.nodeId, destination.nodeId, weight ) );
         return this;
     }
 
@@ -34,14 +34,14 @@ public class Node
 
     public double weight() {
         double weight = 0.0;
-        for ( ReducedNetwork.Relationship relationship : in )
+        for ( Relationship relationship : in )
         {
-            weight += relationship.weight();
+            weight += relationship.getWeight();
         }
 
-        for ( ReducedNetwork.Relationship relationship : out )
+        for ( Relationship relationship : out )
         {
-            weight += relationship.weight();
+            weight += relationship.getWeight();
         }
         return weight;
     }
@@ -54,5 +54,19 @@ public class Node
     public int getCluster()
     {
         return cluster;
+    }
+
+    public List<Relationship> relationships()
+    {
+        List<Relationship> rels = new ArrayList<>(  );
+        for ( Relationship relationship : in )
+        {
+            rels.add(relationship);
+        }
+        for ( Relationship relationship : out )
+        {
+            rels.add(relationship);
+        }
+        return rels;
     }
 }
