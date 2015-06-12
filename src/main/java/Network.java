@@ -151,22 +151,11 @@ public class Network implements Cloneable, Serializable
         else
         { this.edgeWeight = edgeWeight; }
 
-//        if ( nodeWeight == null )
-//        {
         this.nodeWeight = new double[nodes.size()];
         for ( Map.Entry<Integer,Node> entry : nodes.entrySet() )
         {
             this.nodeWeight[entry.getKey()] = entry.getValue().weight();
         }
-
-//            this.nodeWeight = new double[numberOfNodes];
-//            for ( i = 0; i < numberOfNodes; i++ )
-//            { this.nodeWeight[i] = 1; }
-//        }
-//        else
-//        {
-//            this.nodeWeight = nodeWeight;
-//        }
 
         setClusters( cluster );
     }
@@ -627,17 +616,10 @@ public class Network implements Cloneable, Serializable
             {
                 cluster[nodeId] = bestCluster;
 
-                if ( nodes != null )
+                Node node = nodes.get( nodeId );
+                if ( node != null )
                 {
-                    Node node = nodes.get( nodeId );
-                    if ( node == null )
-                    {
-//                        System.out.println( "nodeId = " + nodeId + " => " + nodes );
-                    }
-                    else
-                    {
-                        node.setCluster( bestCluster );
-                    }
+                    node.setCluster( bestCluster );
                 }
 
                 numberStableNodes = 1;
