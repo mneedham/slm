@@ -74,4 +74,14 @@ public class Clusters
 
         return neighborCluster != -1 && nodeCluster != -1 && (nodeCluster == neighborCluster);
     }
+
+    public int[] nodesPerCluster( int numberOfNodes )
+    {
+        int[] numberOfNodesPerCluster = new int[numberOfNodes];
+        for ( Map.Entry<Integer,Network.Cluster> entry : clusters.entrySet() )
+        {
+            numberOfNodesPerCluster[entry.getKey()] = entry.getValue().numberOfNodes();
+        }
+        return numberOfNodesPerCluster;
+    }
 }

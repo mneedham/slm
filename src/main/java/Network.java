@@ -14,6 +14,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -540,7 +541,7 @@ public class Network implements Cloneable, Serializable
             cluster.addWeight( nodeWeight[i] );
         }
 
-        int[] numberOfNodesPerCluster = calculateNumberOfNodesPerCluster( nodes.size(), cluster );
+        int[] numberOfNodesPerCluster = this.clusters.nodesPerCluster( nodes.size() );
 
         int numberUnusedClusters = 0;
         int[] unusedCluster = new int[nodes.size()];
@@ -554,6 +555,7 @@ public class Network implements Cloneable, Serializable
         }
 
         int[] nodesInRandomOrder = nodesInRandomOrder( nodes.size(), random );
+
         double[] edgeWeightsPointingToCluster = new double[nodes.size()];
         int[] neighboringCluster = new int[nodes.size() - 1];
 
@@ -562,64 +564,25 @@ public class Network implements Cloneable, Serializable
         do
         {
             int nodeId = nodesInRandomOrder[i];
-            int numberOfNeighbouringClusters = 0;
-            for ( int k = firstNeighborIndex[nodeId]; k < firstNeighborIndex[nodeId + 1]; k++ )
-            {
-                int neighbourClusterId = cluster[neighbor[k]];
-                if ( edgeWeightsPointingToCluster[neighbourClusterId] == 0 )
-                {
-                    neighboringCluster[numberOfNeighbouringClusters] = neighbourClusterId;
-                    numberOfNeighbouringClusters++;
-                }
-                edgeWeightsPointingToCluster[neighbourClusterId] += edgeWeight[k];
-            }
+            BestCluster bc =
+                    findBestCluster( resolution, clusters, numberOfNodesPerCluster, numberUnusedClusters, unusedCluster,
+                            edgeWeightsPointingToCluster, neighboringCluster, nodeId );
+            numberUnusedClusters = bc.numberUnusedClusters;
 
-            clusters.get( cluster[nodeId] ).removeWeight( nodeWeight( nodeId ) );
-            numberOfNodesPerCluster[cluster[nodeId]]--;
-            if ( numberOfNodesPerCluster[cluster[nodeId]] == 0 )
-            {
-                unusedCluster[numberUnusedClusters] = cluster[nodeId];
-                numberUnusedClusters++;
-            }
-
-            int bestCluster = -1;
-            double maxQualityFunction = 0;
-
-            // work out the best cluster to place this node in
-            for ( int neighbouringClusterIndex = 0; neighbouringClusterIndex < numberOfNeighbouringClusters;
-                  neighbouringClusterIndex++ )
-            {
-                int clusterId = neighboringCluster[neighbouringClusterIndex];
-                qualityFunction = edgeWeightsPointingToCluster[clusterId] -
-                                  nodeWeight( nodeId ) * clusters.get( clusterId ).weight * resolution;
-                if ( (qualityFunction > maxQualityFunction) ||
-                     ((qualityFunction == maxQualityFunction) && (clusterId < bestCluster)) )
-                {
-                    bestCluster = clusterId;
-                    maxQualityFunction = qualityFunction;
-                }
-                edgeWeightsPointingToCluster[clusterId] = 0;
-            }
-            if ( maxQualityFunction == 0 )
-            {
-                bestCluster = unusedCluster[numberUnusedClusters - 1];
-                numberUnusedClusters--;
-            }
-
-            clusters.get( bestCluster ).addWeight( nodeWeight( nodeId ) );
-            numberOfNodesPerCluster[bestCluster]++;
-            if ( bestCluster == cluster[nodeId] )
+            clusters.get( bc.bestCluster ).addWeight( nodeWeight( nodeId ) );
+            numberOfNodesPerCluster[bc.bestCluster]++;
+            if ( bc.bestCluster == cluster[nodeId] )
             {
                 numberStableNodes++;
             }
             else
             {
-                cluster[nodeId] = bestCluster;
+                cluster[nodeId] = bc.bestCluster;
 
                 Node node = nodes.get( nodeId );
                 if ( node != null )
                 {
-                    node.setCluster( bestCluster );
+                    node.setCluster( bc.bestCluster );
                 }
 
                 numberStableNodes = 1;
@@ -650,24 +613,93 @@ public class Network implements Cloneable, Serializable
         return update;
     }
 
+    private BestCluster findBestCluster( double resolution, Map<Integer,Cluster> clusters,
+            int[] numberOfNodesPerCluster, int numberUnusedClusters, int[] unusedCluster,
+            double[] edgeWeightsPointingToCluster, int[] neighboringCluster, int nodeId )
+    {
+        double qualityFunction;
+        int numberOfNeighbouringClusters = 0;
+        for ( int k = firstNeighborIndex[nodeId]; k < firstNeighborIndex[nodeId + 1]; k++ )
+        {
+            int neighbourClusterId = cluster[neighbor[k]];
+            if ( edgeWeightsPointingToCluster[neighbourClusterId] == 0 )
+            {
+                neighboringCluster[numberOfNeighbouringClusters] = neighbourClusterId;
+                numberOfNeighbouringClusters++;
+            }
+            edgeWeightsPointingToCluster[neighbourClusterId] += edgeWeight[k];
+        }
+
+        clusters.get( cluster[nodeId] ).removeWeight( nodeWeight( nodeId ) );
+        numberOfNodesPerCluster[cluster[nodeId]]--;
+        if ( numberOfNodesPerCluster[cluster[nodeId]] == 0 )
+        {
+            unusedCluster[numberUnusedClusters] = cluster[nodeId];
+            numberUnusedClusters++;
+        }
+
+        int bestCluster = -1;
+        double maxQualityFunction = 0;
+
+        // work out the best cluster to place this node in
+        for ( int neighbouringClusterIndex = 0; neighbouringClusterIndex < numberOfNeighbouringClusters;
+              neighbouringClusterIndex++ )
+        {
+            int clusterId = neighboringCluster[neighbouringClusterIndex];
+            qualityFunction = edgeWeightsPointingToCluster[clusterId] -
+                              nodeWeight( nodeId ) * clusters.get( clusterId ).weight * resolution;
+            if ( (qualityFunction > maxQualityFunction) ||
+                 ((qualityFunction == maxQualityFunction) && (clusterId < bestCluster)) )
+            {
+                bestCluster = clusterId;
+                maxQualityFunction = qualityFunction;
+            }
+            edgeWeightsPointingToCluster[clusterId] = 0;
+        }
+        if ( maxQualityFunction == 0 )
+        {
+            bestCluster = unusedCluster[numberUnusedClusters - 1];
+            numberUnusedClusters--;
+        }
+
+        return new BestCluster( bestCluster, numberUnusedClusters );
+    }
+
     private double nodeWeight( int nodeId )
     {
 //        System.out.println( "nodeId = " + nodeId + " " + nodes );
 //        double direct = nodes.get( nodeId ).weight();
-        double viaNodeWeight = nodeWeight[nodeId];
 
 //        System.out.println( "direct = " + direct + " - " + viaNodeWeight );
 
-        return viaNodeWeight;
+        return nodeWeight[nodeId];
     }
 
     private int[] nodesInRandomOrder( int numberOfNodes, Random random )
     {
+        int[] newNodeOrder = new int[numberOfNodes];
+
+        Iterator<Node> iterator = nodes.values().iterator();
+        for ( int i = 0; i < numberOfNodes; i++ )
+        {
+            newNodeOrder[i] = iterator.next().nodeId;
+        }
+
         int[] nodeOrder = new int[numberOfNodes];
         for ( int i = 0; i < numberOfNodes; i++ )
         {
             nodeOrder[i] = i;
         }
+
+
+        System.out.println("random nodes #1: ");
+        print(nodeOrder);
+
+        System.out.println("random nodes #2: ");
+        print(newNodeOrder);
+
+
+
 
         for ( int i = 0; i < numberOfNodes; i++ )
         {
@@ -677,16 +709,6 @@ public class Network implements Cloneable, Serializable
             nodeOrder[j] = k;
         }
         return nodeOrder;
-    }
-
-    private int[] calculateNumberOfNodesPerCluster( int numberOfNodes, int[] cluster )
-    {
-        int[] numberOfNodesPerCluster = new int[numberOfNodes];
-        for ( int i = 0; i < numberOfNodes; i++ )
-        {
-            numberOfNodesPerCluster[cluster[i]]++;
-        }
-        return numberOfNodesPerCluster;
     }
 
     public boolean runLouvainAlgorithm( double resolution, Random random )
@@ -1047,6 +1069,20 @@ public class Network implements Cloneable, Serializable
         public List<Node> nodes()
         {
             return nodes;
+        }
+    }
+
+    public static class BestCluster
+    {
+
+        private final int bestCluster;
+        private final int numberUnusedClusters;
+
+        public BestCluster( int bestCluster, int numberUnusedClusters )
+        {
+
+            this.bestCluster = bestCluster;
+            this.numberUnusedClusters = numberUnusedClusters;
         }
     }
 }
