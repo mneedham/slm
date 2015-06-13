@@ -248,25 +248,7 @@ public class Network implements Cloneable, Serializable
         return numberOfNeighbours;
     }
 
-    public Object clone()
-    {
-        Network clonedNetwork;
 
-        try
-        {
-            clonedNetwork = (Network) super.clone();
-
-            if ( cluster != null )
-            { clonedNetwork.cluster = (int[]) cluster.clone(); }
-            clonedNetwork.deleteClusteringStats();
-
-            return clonedNetwork;
-        }
-        catch ( CloneNotSupportedException e )
-        {
-            return null;
-        }
-    }
 
     public int getNNodes()
     {
@@ -836,11 +818,8 @@ public class Network implements Cloneable, Serializable
             }
 
             reducedNetwork.setClusters( reducedNetworkCluster );
-
             update |= reducedNetwork.runSmartLocalMovingAlgorithm( resolution, random );
-
             mergeClusters( reducedNetwork.getClusters() );
-//            printCluster( cluster );
         }
 
         deleteClusteringStats();
@@ -920,7 +899,6 @@ public class Network implements Cloneable, Serializable
         Network subnetwork = new Network();
 
         int numberOfNodesInSubnetwork = clusters.get( clusterId ).nodesIds().length;
-//        int numberOfNodesInSubnetwork = nodePerCluster[clusterId].length;
 
         if ( numberOfNodesInSubnetwork == 1 )
         {
