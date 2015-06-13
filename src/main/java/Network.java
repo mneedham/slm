@@ -520,7 +520,7 @@ public class Network implements Cloneable, Serializable
                 cluster = new Cluster( clusterId );
                 clusters.put( clusterId, cluster );
             }
-            cluster.addWeight( nodeWeight[i] );
+            cluster.addWeight( nodeWeight(i) );
         }
 
         int[] numberOfNodesPerCluster = this.clusters.nodesPerCluster( nodes.size() );
