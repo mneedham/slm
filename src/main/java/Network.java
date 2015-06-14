@@ -309,11 +309,16 @@ public class Network implements Cloneable, Serializable
         cluster = new int[nodes.size()];
         for ( i = 0; i < nodes.size(); i++ )
         {
-            cluster[i] = i;
+            updateCluster(i, i );
         }
 
         deleteClusteringStats();
         calcClusteringStats();
+    }
+
+    private void updateCluster( int index, int value )
+    {
+        cluster[index] = value;
     }
 
     private static void print( int[] items )
@@ -340,7 +345,7 @@ public class Network implements Cloneable, Serializable
             {
                 i = k;
             }
-            cluster[j] = k;
+            updateCluster( j, k );
         }
         numberOfClusters = i + 1;
 
@@ -559,7 +564,7 @@ public class Network implements Cloneable, Serializable
             }
             else
             {
-                cluster[nodeId] = bc.bestCluster;
+                updateCluster( nodeId, bc.bestCluster );
 
                 Node node = nodes.get( nodeId );
                 if ( node != null )
@@ -588,7 +593,7 @@ public class Network implements Cloneable, Serializable
 
         for ( i = 0; i < nodes.size(); i++ )
         {
-            cluster[i] = newCluster[clusterByIndex( i )];
+            updateCluster(i, newCluster[clusterByIndex( i )]);
         }
 
         deleteClusteringStats();
@@ -789,7 +794,7 @@ public class Network implements Cloneable, Serializable
                 int[] subnetworkCluster = subnetwork.getClusters();
                 for ( int nodeIndex = 0; nodeIndex < subnetworkCluster.length; nodeIndex++ )
                 {
-                    cluster[clusters.get( subnetworkId ).nodesIds()[nodeIndex]] = numberOfClusters + subnetworkCluster[nodeIndex];
+                    updateCluster(clusters.get( subnetworkId ).nodesIds()[nodeIndex], numberOfClusters + subnetworkCluster[nodeIndex]);
                 }
                 numberOfClusters += subnetwork.getNClusters();
             }
@@ -877,7 +882,7 @@ public class Network implements Cloneable, Serializable
         numberOfClusters = i;
         for ( i = 0; i < nodes.size(); i++ )
         {
-            cluster[i] = newCluster[clusterByIndex( i )];
+            updateCluster(i, newCluster[clusterByIndex( i )]);
         }
 
         deleteClusteringStats();
