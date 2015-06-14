@@ -290,7 +290,15 @@ public class Network implements Cloneable, Serializable
 
     public int[] getClusters()
     {
-        return cluster;
+        int[] clusters = new int[nodes.size()];
+        int idx = 0;
+        for ( Node node : nodes.values() )
+        {
+            clusters[idx] = node.getCluster();
+            idx++;
+        }
+
+        return clusters;
     }
 
     public void setClusters( int[] cluster )
@@ -988,7 +996,7 @@ public class Network implements Cloneable, Serializable
         for ( int i = 0; i < nodes.size(); i++ )
         {
             Node node = nodes.get( i );
-            int clusterId = this.cluster[i];
+            int clusterId = clusterByIndex( i );
 
             Cluster cluster = clusters.get( clusterId );
             if ( cluster == null )
