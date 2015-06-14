@@ -39,100 +39,12 @@ public class Network implements Cloneable, Serializable
     private int[] cluster;
     private Clusters clusters;
 
-    public Network( int numberOfNodes, int[][] edge )
-    {
-        this( numberOfNodes, edge, null, null, null );
-    }
-
-    public Network( int numberOfNodes, int[][] edge, double[] edgeWeight )
-    {
-        this( numberOfNodes, edge, edgeWeight, null, null );
-    }
-
-    public Network( int numberOfNodes, int[][] edge, double[] edgeWeight, int[] cluster,
-            Map<Integer,Node> nodes )
-    {
-        this.nodes = nodes;
-        if ( nodes == null )
-        {
-            this.nodes = new TreeMap<>();
-        }
-
-
-        double[] edgeWeight2;
-        int i, j, nEdges, nEdgesWithoutSelfLinks;
-        int[] neighbor;
-
-
-        nEdges = edge[0].length;
-        firstNeighborIndex = new int[numberOfNodes + 1];
-        if ( edgeWeight == null )
-        {
-            edgeWeight = new double[nEdges];
-            for ( i = 0; i < nEdges; i++ )
-            {
-                edgeWeight[i] = 1;
-            }
-        }
-        totalEdgeWeightSelfLinks = 0;
-
-        neighbor = new int[nEdges];
-        edgeWeight2 = new double[nEdges];
-        i = 1;
-        nEdgesWithoutSelfLinks = 0;
-        for ( j = 0; j < nEdges; j++ )
-        {
-            if ( edge[0][j] == edge[1][j] )
-            {
-                totalEdgeWeightSelfLinks += edgeWeight[j];
-            }
-            else
-            {
-                if ( edge[0][j] >= i )
-                {
-                    for (; i <= edge[0][j]; i++ )
-                    { firstNeighborIndex[i] = nEdgesWithoutSelfLinks; }
-                }
-                neighbor[nEdgesWithoutSelfLinks] = edge[1][j];
-                edgeWeight2[nEdgesWithoutSelfLinks] = edgeWeight[j];
-                nEdgesWithoutSelfLinks++;
-            }
-        }
-        for (; i <= numberOfNodes; i++ )
-        { firstNeighborIndex[i] = nEdgesWithoutSelfLinks; }
-
-        this.neighbor = new int[nEdgesWithoutSelfLinks];
-        System.arraycopy( neighbor, 0, this.neighbor, 0, nEdgesWithoutSelfLinks );
-        this.edgeWeight = new double[nEdgesWithoutSelfLinks];
-        System.arraycopy( edgeWeight2, 0, this.edgeWeight, 0, nEdgesWithoutSelfLinks );
-
-        this.nodeWeight = new double[numberOfNodes];
-        for ( Map.Entry<Integer,Node> entry : nodes.entrySet() )
-        {
-            this.nodeWeight[entry.getKey()] = entry.getValue().weight();
-        }
-
-        setClusters( cluster );
-    }
-
-    public Network( int[] firstNeighborIndex, int[] neighbor )
-    {
-        this( firstNeighborIndex, neighbor, null, null );
-    }
-
     public Network( int[] firstNeighborIndex, int[] neighbor, double[] edgeWeight )
     {
         this( firstNeighborIndex, neighbor, edgeWeight, null );
     }
 
-    public Network( int[] firstNeighborIndex, int[] neighbor, double[] edgeWeight,
-            Map<Integer,Node> nodes )
-    {
-        this( firstNeighborIndex, neighbor, edgeWeight, null, nodes );
-    }
-
-    public Network( int[] firstNeighborIndex, int[] neighbor, double[] edgeWeight,
-            int[] cluster, Map<Integer,Node> nodes )
+    public Network( int[] firstNeighborIndex, int[] neighbor, double[] edgeWeight, Map<Integer,Node> nodes )
     {
         this.nodes = nodes;
 
@@ -158,7 +70,6 @@ public class Network implements Cloneable, Serializable
             this.nodeWeight[entry.getKey()] = entry.getValue().weight();
         }
 
-        setClusters( cluster );
     }
 
     public static Network create( String fileName, ModularityOptimizer.ModularityFunction modularityFunction )
@@ -299,13 +210,6 @@ public class Network implements Cloneable, Serializable
         }
 
         return clusters;
-    }
-
-    public void setClusters( int[] cluster )
-    {
-        numberOfClusters = Clusters.calculateNumberOfClusters( cluster, nodes.size() );
-        this.cluster = cluster;
-        deleteClusteringStats();
     }
 
     public void initSingletonClusters()
