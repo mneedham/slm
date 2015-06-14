@@ -84,4 +84,9 @@ public class Clusters
         }
         return numberOfNodesPerCluster;
     }
+
+    public int size()
+    {
+        return clusters.size();
+    }
 }

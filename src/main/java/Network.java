@@ -36,7 +36,6 @@ public class Network implements Cloneable, Serializable
     private boolean clusteringStatsAvailable;
 
     private Map<Integer,Node> nodes;
-    private int[] cluster;
     private Clusters clusters;
 
     public Network( int[] firstNeighborIndex, int[] neighbor, double[] edgeWeight )
@@ -217,7 +216,6 @@ public class Network implements Cloneable, Serializable
         int i;
 
         numberOfClusters = nodes.size();
-        cluster = new int[nodes.size()];
         for ( i = 0; i < nodes.size(); i++ )
         {
             updateCluster( i, i );
@@ -229,9 +227,7 @@ public class Network implements Cloneable, Serializable
 
     private void updateCluster( int index, int value )
     {
-        // index is the node's position in the cluster array - how do we map that to node id?
-        cluster[index] = value;
-        nodes.get(nodeIds()[index]).setCluster( value );
+        nodes.get( nodeIds()[index] ).setCluster( value );
     }
 
     private int[] nodeIds()
@@ -257,11 +253,6 @@ public class Network implements Cloneable, Serializable
 
     public void mergeClusters( int[] newCluster )
     {
-        if ( cluster == null )
-        {
-            return;
-        }
-
         int i = 0;
         for ( int j = 0; j < nodes.size(); j++ )
         {
@@ -284,11 +275,6 @@ public class Network implements Cloneable, Serializable
 
     public Network[] createSubnetworks()
     {
-        if ( cluster == null )
-        {
-            return null;
-        }
-
         if ( !clusteringStatsAvailable )
         {
             calcClusteringStats();
@@ -313,11 +299,6 @@ public class Network implements Cloneable, Serializable
         double[] reducedNetworkEdgeWeight1, reducedNetworkEdgeWeight2;
         int clusterId, index, nodeId, l, otherNodeClusterId, reducedNetworkNEdges1, reducedNetworkNEdges2;
         int[] reducedNetworkNeighbor1, reducedNetworkNeighbor2;
-
-        if ( cluster == null )
-        {
-            return null;
-        }
 
         if ( !clusteringStatsAvailable )
         {
@@ -391,11 +372,6 @@ public class Network implements Cloneable, Serializable
     {
         double qualityFunction, totalEdgeWeight;
 
-        if ( cluster == null )
-        {
-            return Double.NaN;
-        }
-
         if ( !clusteringStatsAvailable )
         {
             calcClusteringStats();
@@ -433,7 +409,7 @@ public class Network implements Cloneable, Serializable
         double qualityFunction;
         int[] newCluster;
 
-        if ( (cluster == null) || (nodes.size() == 1) )
+        if ((nodes.size() == 1) )
         {
             return false;
         }
@@ -490,12 +466,6 @@ public class Network implements Cloneable, Serializable
             else
             {
                 updateCluster( nodeId, bc.bestCluster );
-
-//                Node node = nodes.get( nodeId );
-//                if ( node != null )
-//                {
-//                    node.setCluster( bc.bestCluster );
-//                }
 
                 numberStableNodes = 1;
                 update = true;
@@ -580,24 +550,12 @@ public class Network implements Cloneable, Serializable
 
     private double nodeWeight( int nodeId )
     {
-//        System.out.println( "nodeId = " + nodeId + " " + nodes );
-//        double direct = nodes.get( nodeId ).weight();
-
-//        System.out.println( "direct = " + direct + " - " + viaNodeWeight );
 
         return nodeWeight[nodeId];
     }
 
     private int[] nodesInRandomOrder( int numberOfNodes, Random random )
     {
-        int[] newNodeOrder = new int[numberOfNodes];
-
-        Iterator<Node> iterator = nodes.values().iterator();
-        for ( int i = 0; i < numberOfNodes; i++ )
-        {
-            newNodeOrder[i] = iterator.next().nodeId;
-        }
-
         int[] nodeOrder = new int[numberOfNodes];
         for ( int i = 0; i < numberOfNodes; i++ )
         {
@@ -618,8 +576,10 @@ public class Network implements Cloneable, Serializable
     {
         boolean update, update2;
 
-        if ( (cluster == null) || (nodes.size() == 1) )
-        { return false; }
+        if ( (nodes.size() == 1) )
+        {
+            return false;
+        }
 
         update = runLocalMovingAlgorithm( resolution, random );
 
@@ -647,8 +607,10 @@ public class Network implements Cloneable, Serializable
     {
         boolean update, update2;
 
-        if ( (cluster == null) || (nodes.size() == 1) )
-        { return false; }
+        if ( (nodes.size() == 1) )
+        {
+            return false;
+        }
 
         update = runLocalMovingAlgorithm( resolution, random );
 
@@ -676,7 +638,7 @@ public class Network implements Cloneable, Serializable
 
     public boolean runSmartLocalMovingAlgorithm( double resolution, Random random )
     {
-        if ( (cluster == null) || (nodes.size() == 1) )
+        if ((nodes.size() == 1) )
         {
             return false;
         }
@@ -782,8 +744,6 @@ public class Network implements Cloneable, Serializable
         int i;
         int[] newCluster;
 
-        if ( cluster == null )
-        { return; }
 
         if ( !clusteringStatsAvailable )
         { calcClusteringStats(); }

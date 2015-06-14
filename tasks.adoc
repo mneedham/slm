@@ -1,0 +1,9 @@
+= Tasks to do
+
+* Get rid of Network#cluster
+* Get rid of Network#neighbor
+* Get rid of Network#edgeWeight
+* Get rid of Network#nodeWeight
+* Get rid of Network#firstNeighborIndex
+* Create some more test cases  - look for some other network examples to use
+* Plug a Neo4j graph in
