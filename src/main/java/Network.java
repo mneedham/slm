@@ -55,7 +55,7 @@ public class Network implements Cloneable, Serializable
         this.nodes = nodes;
         if ( nodes == null )
         {
-            this.nodes = new HashMap<>();
+            this.nodes = new TreeMap<>();
         }
 
 
@@ -249,7 +249,6 @@ public class Network implements Cloneable, Serializable
     }
 
 
-
     public int getNNodes()
     {
         return nodes.size();
@@ -309,7 +308,7 @@ public class Network implements Cloneable, Serializable
         cluster = new int[nodes.size()];
         for ( i = 0; i < nodes.size(); i++ )
         {
-            updateCluster(i, i );
+            updateCluster( i, i );
         }
 
         deleteClusteringStats();
@@ -318,7 +317,21 @@ public class Network implements Cloneable, Serializable
 
     private void updateCluster( int index, int value )
     {
+        // index is the node's position in the cluster array - how do we map that to node id?
         cluster[index] = value;
+        nodes.get(nodeIds()[index]).setCluster( value );
+    }
+
+    private int[] nodeIds()
+    {
+        int[] nodeIds = new int[nodes.size()];
+        int idx = 0;
+        for ( Node node : nodes.values() )
+        {
+            nodeIds[idx] = node.nodeId;
+            idx++;
+        }
+        return nodeIds;
     }
 
     private static void print( int[] items )
@@ -525,7 +538,7 @@ public class Network implements Cloneable, Serializable
                 cluster = new Cluster( clusterId );
                 clusters.put( clusterId, cluster );
             }
-            cluster.addWeight( nodeWeight(i) );
+            cluster.addWeight( nodeWeight( i ) );
         }
 
         int[] numberOfNodesPerCluster = this.clusters.nodesPerCluster( nodes.size() );
@@ -566,11 +579,11 @@ public class Network implements Cloneable, Serializable
             {
                 updateCluster( nodeId, bc.bestCluster );
 
-                Node node = nodes.get( nodeId );
-                if ( node != null )
-                {
-                    node.setCluster( bc.bestCluster );
-                }
+//                Node node = nodes.get( nodeId );
+//                if ( node != null )
+//                {
+//                    node.setCluster( bc.bestCluster );
+//                }
 
                 numberStableNodes = 1;
                 update = true;
@@ -593,7 +606,7 @@ public class Network implements Cloneable, Serializable
 
         for ( i = 0; i < nodes.size(); i++ )
         {
-            updateCluster(i, newCluster[clusterByIndex( i )]);
+            updateCluster( i, newCluster[clusterByIndex( i )] );
         }
 
         deleteClusteringStats();
@@ -779,7 +792,7 @@ public class Network implements Cloneable, Serializable
                 // rather groups of them
                 if ( nodes != null )
                 {
-                    Map<Integer,Node> newNodesMap = new HashMap<>();
+                    Map<Integer,Node> newNodesMap = new TreeMap<>();
                     for ( int nodeId : clusters.get( subnetworkId ).nodesIds() )
                     {
                         Node node = nodes.get( nodeId );
@@ -794,7 +807,8 @@ public class Network implements Cloneable, Serializable
                 int[] subnetworkCluster = subnetwork.getClusters();
                 for ( int nodeIndex = 0; nodeIndex < subnetworkCluster.length; nodeIndex++ )
                 {
-                    updateCluster(clusters.get( subnetworkId ).nodesIds()[nodeIndex], numberOfClusters + subnetworkCluster[nodeIndex]);
+                    updateCluster( clusters.get( subnetworkId ).nodesIds()[nodeIndex],
+                            numberOfClusters + subnetworkCluster[nodeIndex] );
                 }
                 numberOfClusters += subnetwork.getNClusters();
             }
@@ -882,7 +896,7 @@ public class Network implements Cloneable, Serializable
         numberOfClusters = i;
         for ( i = 0; i < nodes.size(); i++ )
         {
-            updateCluster(i, newCluster[clusterByIndex( i )]);
+            updateCluster( i, newCluster[clusterByIndex( i )] );
         }
 
         deleteClusteringStats();
@@ -964,12 +978,7 @@ public class Network implements Cloneable, Serializable
     // get the cluster for a node in a specific position
     private int clusterByIndex( int index )
     {
-        return this.cluster[index];
-    }
-
-    private int clusterByNodeId( int nodeId )
-    {
-        return clusters.findClusterId( nodeId );
+        return nodes.get( nodeIds()[index] ).getCluster();
     }
 
 

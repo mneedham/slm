@@ -882,17 +882,18 @@ public class ReducedNetwork implements Cloneable, Serializable
             }
             else
             {
+//                updateCluster(nodeId, bestCluster);
                 cluster[nodeId] = bestCluster;
 
-                if ( nodesMap != null )
-                {
-                    Node node = nodesMap.get( nodeId );
-                    if(node == null) {
-//                        System.out.println( "nodeId = " + nodeId + " => " + nodesMap );
-                    } else {
-                        node.setCluster( bestCluster );
-                    }
-                }
+//                if ( nodesMap != null )
+//                {
+//                    Node node = nodesMap.get( nodeId );
+//                    if(node == null) {
+////                        System.out.println( "nodeId = " + nodeId + " => " + nodesMap );
+//                    } else {
+//                        node.setCluster( bestCluster );
+//                    }
+//                }
 
                 numberStableNodes = 1;
                 update = true;
