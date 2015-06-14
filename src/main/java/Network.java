@@ -26,9 +26,13 @@ public class Network implements Cloneable, Serializable
 {
     private static final long serialVersionUID = 1;
 
+    // acts as an offset into neighbor
     private int[] firstNeighborIndex;
     private int[] neighbor;
+
+    // depends on the two fields above
     private double[] edgeWeight;
+
     private double totalEdgeWeightSelfLinks;
     private int numberOfClusters;
     private boolean clusteringStatsAvailable;
