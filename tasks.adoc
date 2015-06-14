@@ -1,6 +1,5 @@
 = Tasks to do
 
-* Get rid of Network#cluster
 * Get rid of Network#neighbor
 * Get rid of Network#edgeWeight
 * Get rid of Network#nodeWeight

@@ -14,7 +14,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -31,7 +30,6 @@ public class Network implements Cloneable, Serializable
     private int[] neighbor;
     private double[] edgeWeight;
     private double totalEdgeWeightSelfLinks;
-    private double[] nodeWeight;
     private int numberOfClusters;
     private boolean clusteringStatsAvailable;
 
@@ -46,9 +44,7 @@ public class Network implements Cloneable, Serializable
     public Network( int[] firstNeighborIndex, int[] neighbor, double[] edgeWeight, Map<Integer,Node> nodes )
     {
         this.nodes = nodes;
-
         int i, nEdges;
-
 
         this.firstNeighborIndex = firstNeighborIndex;
         this.neighbor = neighbor;
@@ -62,13 +58,6 @@ public class Network implements Cloneable, Serializable
         }
         else
         { this.edgeWeight = edgeWeight; }
-
-        this.nodeWeight = new double[nodes.size()];
-        for ( Map.Entry<Integer,Node> entry : nodes.entrySet() )
-        {
-            this.nodeWeight[entry.getKey()] = entry.getValue().weight();
-        }
-
     }
 
     public static Network create( String fileName, ModularityOptimizer.ModularityFunction modularityFunction )
@@ -190,6 +179,12 @@ public class Network implements Cloneable, Serializable
 
     public double[] getNodeWeights()
     {
+        double[] nodeWeight = new double[nodes.size()];
+        for ( Map.Entry<Integer,Node> entry : nodes.entrySet() )
+        {
+            nodeWeight[entry.getKey()] = entry.getValue().weight();
+        }
+
         return nodeWeight;
     }
 
@@ -550,8 +545,7 @@ public class Network implements Cloneable, Serializable
 
     private double nodeWeight( int nodeId )
     {
-
-        return nodeWeight[nodeId];
+        return nodes.get( nodeIds()[nodeId] ).weight();
     }
 
     private int[] nodesInRandomOrder( int numberOfNodes, Random random )
@@ -788,7 +782,6 @@ public class Network implements Cloneable, Serializable
             subnetwork.firstNeighborIndex = new int[2];
             subnetwork.neighbor = new int[0];
             subnetwork.edgeWeight = new double[0];
-            subnetwork.nodeWeight = new double[]{nodeWeight( clusters.get( clusterId ).nodesIds()[0] )};
         }
         else
         {
@@ -799,7 +792,6 @@ public class Network implements Cloneable, Serializable
             }
 
             subnetwork.firstNeighborIndex = new int[numberOfNodesInSubnetwork + 1];
-            subnetwork.nodeWeight = new double[numberOfNodesInSubnetwork];
 
             int subnetworkNEdges = 0;
             for ( int i = 0; i < numberOfNodesInSubnetwork; i++ )
@@ -832,7 +824,6 @@ public class Network implements Cloneable, Serializable
                 }
 
                 subnetwork.firstNeighborIndex[i + 1] = subnetworkNEdges;
-                subnetwork.nodeWeight[i] = nodeWeight( nodeId );
             }
 
 
