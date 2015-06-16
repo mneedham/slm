@@ -26,8 +26,6 @@ public class Network implements Cloneable, Serializable
 {
     private static final long serialVersionUID = 1;
 
-    // acts as an offset into neighbor
-    private int[] firstNeighborIndex;
     private int[] neighbor;
 
     // depends on the two fields above
@@ -50,7 +48,7 @@ public class Network implements Cloneable, Serializable
         this.nodes = nodes;
         int i, nEdges;
 
-        this.firstNeighborIndex = firstNeighborIndex;
+//        this.firstNeighborIndex = firstNeighborIndex;
         this.neighbor = neighbor;
 
         if ( edgeWeight == null )
@@ -775,7 +773,6 @@ public class Network implements Cloneable, Serializable
 
         if ( numberOfNodesInSubnetwork == 1 )
         {
-            subnetwork.firstNeighborIndex = new int[2];
             subnetwork.neighbor = new int[0];
             subnetwork.edgeWeight = new double[0];
         }
@@ -786,8 +783,6 @@ public class Network implements Cloneable, Serializable
             {
                 subnetworkNode[clusters.get( clusterId ).nodesIds()[i]] = i;
             }
-
-            subnetwork.firstNeighborIndex = new int[numberOfNodesInSubnetwork + 1];
 
             int subnetworkNEdges = 0;
             for ( int i = 0; i < numberOfNodesInSubnetwork; i++ )
@@ -810,18 +805,7 @@ public class Network implements Cloneable, Serializable
                 // firstNeighborIndex[nodeId] gives us this node
                 // firstNeighbor[nodeId +1] gives us the first neighbour of the next node
 
-                // only keeps the nodes in the same sub-network
-                for ( k = firstNeighborIndex[nodeId]; k < firstNeighborIndex[nodeId + 1]; k++ )
-                {
-                    if ( clusterByIndex( neighbor[k] ) == clusterId )
-                    {
-                        subnetworkNeighbor[subnetworkNEdges] = subnetworkNode[neighbor[k]];
-                        subnetworkEdgeWeight[subnetworkNEdges] = edgeWeight[k];
-                        subnetworkNEdges++;
-                    }
-                }
 
-                subnetwork.firstNeighborIndex[i + 1] = subnetworkNEdges;
             }
 
 
