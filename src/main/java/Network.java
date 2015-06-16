@@ -760,8 +760,7 @@ public class Network implements Cloneable, Serializable
 
     private Network createSubnetwork( int clusterId )
     {
-        Network subnetwork = new Network();
-        subnetwork.totalEdgeWeightSelfLinks = 0;
+
 
         // this currently isn't being set on a reduced network
         // that seems to behave differently though as I don't think the network represents actual nodes, but
@@ -772,7 +771,9 @@ public class Network implements Cloneable, Serializable
             Node node = nodes.get( nodeId );
             newNodesMap.put( nodeId, node );
         }
-        subnetwork.nodes = newNodesMap;
+        Network subnetwork = new Network(newNodesMap);
+        subnetwork.totalEdgeWeightSelfLinks = 0;
+
 
         return subnetwork;
     }
