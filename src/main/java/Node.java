@@ -69,4 +69,14 @@ public class Node
         }
         return rels;
     }
+
+    public List<Relationship> getIn()
+    {
+        return in;
+    }
+
+    public List<Relationship> getOut()
+    {
+        return out;
+    }
 }

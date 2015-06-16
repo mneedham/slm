@@ -408,7 +408,7 @@ public class Network implements Cloneable, Serializable
         double qualityFunction;
         int[] newCluster;
 
-        if ((nodes.size() == 1) )
+        if ( (nodes.size() == 1) )
         {
             return false;
         }
@@ -499,17 +499,23 @@ public class Network implements Cloneable, Serializable
             int[] numberOfNodesPerCluster, int numberUnusedClusters, int[] unusedCluster,
             double[] edgeWeightsPointingToCluster, int[] neighboringCluster, int nodeId )
     {
+        Node node = nodes.get( nodeIds()[nodeId] );
+
         double qualityFunction;
         int numberOfNeighbouringClusters = 0;
-        for ( int k = firstNeighborIndex[nodeId]; k < firstNeighborIndex[nodeId + 1]; k++ )
+        for ( Relationship relationship : node.relationships() )
         {
-            int neighbourClusterId = clusterByIndex( neighbor[k] );
-            if ( edgeWeightsPointingToCluster[neighbourClusterId] == 0 )
+            Node neighbour = nodes.get( relationship.otherNode( node.nodeId ) );
+            if ( neighbour != null )
             {
-                neighboringCluster[numberOfNeighbouringClusters] = neighbourClusterId;
-                numberOfNeighbouringClusters++;
+                int neighbourClusterId = neighbour.getCluster();
+                if ( edgeWeightsPointingToCluster[neighbourClusterId] == 0 )
+                {
+                    neighboringCluster[numberOfNeighbouringClusters] = neighbourClusterId;
+                    numberOfNeighbouringClusters++;
+                }
+                edgeWeightsPointingToCluster[neighbourClusterId] += relationship.getWeight();
             }
-            edgeWeightsPointingToCluster[neighbourClusterId] += edgeWeight[k];
         }
 
         clusters.get( clusterByIndex( nodeId ) ).removeWeight( nodeWeight( nodeId ) );
@@ -636,7 +642,7 @@ public class Network implements Cloneable, Serializable
 
     public boolean runSmartLocalMovingAlgorithm( double resolution, Random random )
     {
-        if ((nodes.size() == 1) )
+        if ( (nodes.size() == 1) )
         {
             return false;
         }
@@ -658,20 +664,6 @@ public class Network implements Cloneable, Serializable
             {
                 // need to add the nodes map to the sub network
                 Network subnetwork = subnetworks[subnetworkId];
-
-                // this currently isn't being set on a reduced network
-                // that seems to behave differently though as I don't think the network represents actual nodes, but
-                // rather groups of them
-                if ( nodes != null )
-                {
-                    Map<Integer,Node> newNodesMap = new TreeMap<>();
-                    for ( int nodeId : clusters.get( subnetworkId ).nodesIds() )
-                    {
-                        Node node = nodes.get( nodeId );
-                        newNodesMap.put( nodeId, node );
-                    }
-                    subnetwork.nodes = newNodesMap;
-                }
 
                 subnetwork.initSingletonClusters();
                 subnetwork.runLocalMovingAlgorithm( resolution, random );
@@ -817,6 +809,8 @@ public class Network implements Cloneable, Serializable
                 // iterate all the neighbouring nodes of 'nodeId'
                 // firstNeighborIndex[nodeId] gives us this node
                 // firstNeighbor[nodeId +1] gives us the first neighbour of the next node
+
+                // only keeps the nodes in the same sub-network
                 for ( k = firstNeighborIndex[nodeId]; k < firstNeighborIndex[nodeId + 1]; k++ )
                 {
                     if ( clusterByIndex( neighbor[k] ) == clusterId )
@@ -838,6 +832,17 @@ public class Network implements Cloneable, Serializable
         }
 
         subnetwork.totalEdgeWeightSelfLinks = 0;
+
+        // this currently isn't being set on a reduced network
+        // that seems to behave differently though as I don't think the network represents actual nodes, but
+        // rather groups of them
+        Map<Integer,Node> newNodesMap = new TreeMap<>();
+        for ( int nodeId : clusters.get( clusterId ).nodesIds() )
+        {
+            Node node = nodes.get( nodeId );
+            newNodesMap.put( nodeId, node );
+        }
+        subnetwork.nodes = newNodesMap;
 
         return subnetwork;
     }
