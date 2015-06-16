@@ -31,8 +31,7 @@ public class ModularityOptimizer
                             double[] edgeWeight, Map<Integer,Node> nodes )
                     {
 
-                        return new Network( firstNeighborIndex, neighbor, edgeWeight, nodes );
-//                        return new Network( nNodes, firstNeighborIndex, neighbor, edgeWeight, nodeWeight, nodes );
+                        return new Network( nodes );
                     }
 
                     @Override
@@ -61,7 +60,7 @@ public class ModularityOptimizer
                     Network createNetwork( int nNodes, int nEdges, int[] firstNeighborIndex, int[] neighbor,
                             double[] edgeWeight2, Map<Integer,Node> nodesMap )
                     {
-                        return new Network( firstNeighborIndex, neighbor, edgeWeight2 );
+                        return new Network( neighbor, edgeWeight2 );
                     }
 
                     @Override
