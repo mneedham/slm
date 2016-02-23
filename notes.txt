@@ -1,0 +1,16 @@
+load csv from "file:///Users/markneedham/projects/slm/karate_club_network.txt" as row FIELDTERMINATOR "\t"
+MERGE (person1:Person {id: row[0]})
+MERGE (person2:Person {id: row[1]})
+MERGE (person1)-[:KNOWS]-(person2)
+
+load csv from "file:///Users/markneedham/projects/slm/communities.txt" as row FIELDTERMINATOR "\t"
+WITH COLLECT(row) AS rows
+UNWIND range(0, SIZE(rows)) AS nodeId
+MATCH (p:Person {id: tostring(nodeId)})
+WITH p, rows[nodeId][0] AS community
+
+
+FOREACH(ignoreMe IN CASE WHEN community = "0" THEN [1] ELSE [] END | SET p:`Community-0`)
+FOREACH(ignoreMe IN CASE WHEN community = "1" THEN [1] ELSE [] END | SET p:`Community-1`)
+FOREACH(ignoreMe IN CASE WHEN community = "2" THEN [1] ELSE [] END | SET p:`Community-2`)
+FOREACH(ignoreMe IN CASE WHEN community = "3" THEN [1] ELSE [] END | SET p:`Community-3`)

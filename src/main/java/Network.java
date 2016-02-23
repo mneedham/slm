@@ -10,6 +10,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.io.Reader;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,7 +44,7 @@ public class Network implements Cloneable, Serializable
         this.nodes = nodes;
     }
 
-    public static Network create( String fileName, ModularityOptimizer.ModularityFunction modularityFunction )
+    public static Network create( ModularityOptimizer.ModularityFunction modularityFunction, Reader in )
             throws IOException
     {
         double[] edgeWeight;
@@ -51,13 +52,19 @@ public class Network implements Cloneable, Serializable
         int[] neighbor;
 
         List<Relationship> relationships = new ArrayList<>( 10_000 );
-        Map<Integer,Node> nodes = new TreeMap<Integer,Node>();
-        try ( BufferedReader bufferedReader = new BufferedReader( new FileReader( fileName ) ) )
+        Map<Integer,Node> nodes = new TreeMap<>();
+        try ( BufferedReader bufferedReader = new BufferedReader( in ) )
         {
             String line;
             while ( (line = bufferedReader.readLine()) != null )
             {
+                if ( line.length() == 0 )
+                {
+                    break;
+                }
+
                 String[] parts = line.split( "\t" );
+
                 int sourceId = parseInt( parts[0] );
                 int destinationId = parseInt( parts[1] );
 
@@ -114,8 +121,7 @@ public class Network implements Cloneable, Serializable
             }
         }
 
-        return modularityFunction
-                .createNetwork( numberOfNodes, nEdges, firstNeighborIndex, neighbor, edgeWeight, nodes );
+        return modularityFunction.createNetwork( numberOfNodes, nEdges, firstNeighborIndex, neighbor, edgeWeight, nodes );
     }
 
     private static int[] degree( Map<Integer,Node> nodesMap )

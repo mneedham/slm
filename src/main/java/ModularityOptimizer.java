@@ -8,8 +8,12 @@
 
 import java.io.BufferedWriter;
 import java.io.Console;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.Map;
 import java.util.Random;
 
@@ -160,7 +164,13 @@ public class ModularityOptimizer
             System.out.println();
         }
 
-        network = Network.create( inputFileName, modularityFunction );
+//        network = Network.create( modularityFunction,  new FileReader( inputFileName ) );
+//        network = Network.create( modularityFunction,  new InputStreamReader( System.in ) );
+
+        network = "stdin".equals( inputFileName ) ?
+                Network.create( modularityFunction,  new InputStreamReader( System.in ) ) :
+                Network.create( modularityFunction,  new FileReader( inputFileName ) );
+
 
         if ( printOutput )
         {
@@ -254,7 +264,11 @@ public class ModularityOptimizer
             System.out.println();
         }
 
-        writeOutputFile( outputFileName, cluster );
+
+
+        OutputStreamWriter writer = "stdout".equals(outputFileName) ?  new OutputStreamWriter( System.out ) : new FileWriter( outputFileName );
+//        writeOutputFile( cluster, new FileWriter( outputFileName ) );
+        writeOutputFile( cluster, writer );
     }
 
     private static String algorithmDescription( int algorithm )
@@ -273,12 +287,12 @@ public class ModularityOptimizer
         System.out.println();
     }
 
-    private static void writeOutputFile( String fileName, int[] cluster ) throws IOException
+    private static void writeOutputFile( int[] cluster, Writer writer ) throws IOException
     {
         BufferedWriter bufferedWriter;
         int i;
 
-        bufferedWriter = new BufferedWriter( new FileWriter( fileName ) );
+        bufferedWriter = new BufferedWriter( writer );
 
         for ( i = 0; i < cluster.length; i++ )
         {

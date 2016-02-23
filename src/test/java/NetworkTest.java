@@ -1,5 +1,6 @@
 import org.junit.Test;
 
+import java.io.FileReader;
 import java.io.IOException;
 
 import static org.junit.Assert.*;
@@ -11,7 +12,7 @@ public class NetworkTest
     public void shouldCreateKarateNetwork() throws IOException
     {
         ModularityOptimizer.ModularityFunction alternativeModularityFunction = ModularityOptimizer.ModularityFunction.Standard;
-        Network network = Network.create( "karate_club_network.txt", alternativeModularityFunction );
+        Network network = Network.create( alternativeModularityFunction, new FileReader( "karate_club_network.txt" ) );
 
         assertEquals(34, network.getNNodes());
 
