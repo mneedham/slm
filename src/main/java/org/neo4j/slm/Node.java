@@ -1,3 +1,5 @@
+package org.neo4j.slm;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,6 +57,8 @@ public class Node
     {
         return cluster;
     }
+
+
 
     public List<Relationship> relationships()
     {

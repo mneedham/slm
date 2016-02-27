@@ -1,3 +1,5 @@
+package org.neo4j.slm;
+
 import static java.lang.Double.parseDouble;
 import static java.lang.Integer.parseInt;
 
@@ -7,7 +9,7 @@ public class Relationship
     private final int destination;
     private double weight;
 
-    Relationship( int source, int destination, double weight )
+    public Relationship( int source, int destination, double weight )
     {
         this.source = source;
         this.destination = destination;

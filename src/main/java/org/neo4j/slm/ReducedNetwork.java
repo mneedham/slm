@@ -1,4 +1,4 @@
-/**
+package org.neo4j.slm; /**
  * Network
  *
  * @author Ludo Waltman

@@ -1,7 +1,12 @@
+package org.neo4j.slm;
+
 import org.junit.Test;
 
 import java.io.FileReader;
 import java.io.IOException;
+
+import org.neo4j.slm.ModularityOptimizer;
+import org.neo4j.slm.Network;
 
 import static org.junit.Assert.*;
 

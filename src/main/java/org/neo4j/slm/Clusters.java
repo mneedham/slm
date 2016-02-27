@@ -1,3 +1,5 @@
+package org.neo4j.slm;
+
 import java.util.HashMap;
 import java.util.Map;
 

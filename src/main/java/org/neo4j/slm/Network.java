@@ -1,4 +1,4 @@
-/**
+package org.neo4j.slm; /**
  * Network
  *
  * @author Ludo Waltman
@@ -7,7 +7,6 @@
  */
 
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.Reader;
@@ -20,6 +19,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 
+import org.neo4j.graphdb.Result;
+
 import static java.lang.Double.parseDouble;
 import static java.lang.Integer.parseInt;
 
@@ -31,7 +32,7 @@ public class Network implements Cloneable, Serializable
     private int numberOfClusters;
     private boolean clusteringStatsAvailable;
 
-    private Map<Integer,Node> nodes;
+    private Map<Integer, Node> nodes;
     private Clusters clusters;
 
     public Network( int[] neighbor, double[] edgeWeight )
@@ -39,9 +40,93 @@ public class Network implements Cloneable, Serializable
         this( null );
     }
 
-    public Network( Map<Integer,Node> nodes )
+    public Network( Map<Integer, Node> nodes )
     {
         this.nodes = nodes;
+    }
+
+    public static Network create( ModularityOptimizer.ModularityFunction modularityFunction, Result result )
+            throws IOException
+    {
+        double[] edgeWeight;
+        int i, nEdges;
+        int[] neighbor;
+
+        List<Relationship> relationships = new ArrayList<>( 10_000 );
+        Map<Integer, Node> nodes = new TreeMap<>();
+
+        /*
+            Reads the input file/stream and creates a map of (id -> node) and a list of relationships
+            Could replace this with a stream of results coming from a Cypher query?
+            Step 1. Use all the machinery and sub in Cypher query output
+            Step 2. Remove unnecessary conversion and just use Neo4j data types
+         */
+
+        while ( result.hasNext() )
+        {
+            Map<String, Object> row = result.next();
+
+            int sourceId = parseInt( (String) row.get( "p1" ) );
+            int destinationId = parseInt( (String) row.get( "p2" ) );
+            double weight = 1;
+
+            Node source = nodes.get( sourceId );
+            if ( source == null )
+            {
+                source = new Node( sourceId );
+                nodes.put( sourceId, source );
+            }
+
+            Node destination = nodes.get( destinationId );
+            if ( destination == null )
+            {
+                destination = new Node( destinationId );
+                nodes.put( destinationId, destination );
+            }
+
+            destination.in( source, weight );
+            source.out( destination, weight );
+
+            relationships.add( new Relationship( sourceId, destinationId, weight ) );
+        }
+
+        /*
+         Calculate a few metrics around the nodes
+         */
+        int numberOfNodes = nodes.size();
+        int[] degree = degree( nodes );
+        int[] firstNeighborIndex = new int[numberOfNodes + 1];
+        nEdges = 0;
+        for ( i = 0; i < numberOfNodes; i++ )
+        {
+            firstNeighborIndex[i] = nEdges;
+            nEdges += degree[i];
+        }
+        firstNeighborIndex[numberOfNodes] = nEdges;
+
+        neighbor = new int[nEdges];
+        edgeWeight = new double[nEdges];
+
+        Arrays.fill( degree, 0 );
+
+        for ( Relationship relationship : relationships )
+        {
+            if ( relationship.getSource() < relationship.getDestination() )
+            {
+                int j = firstNeighborIndex[relationship.getSource()] + degree[relationship.getSource()];
+                neighbor[j] = relationship.getDestination();
+                edgeWeight[j] = relationship.getWeight();
+                degree[relationship.getSource()]++;
+
+                j = firstNeighborIndex[relationship.getDestination()] + degree[relationship.getDestination()];
+                neighbor[j] = relationship.getSource();
+                edgeWeight[j] = relationship.getWeight();
+                degree[relationship.getDestination()]++;
+            }
+        }
+
+        return modularityFunction.createNetwork( numberOfNodes, nEdges, firstNeighborIndex, neighbor, edgeWeight,
+                nodes );
     }
 
     public static Network create( ModularityOptimizer.ModularityFunction modularityFunction, Reader in )
@@ -52,7 +137,15 @@ public class Network implements Cloneable, Serializable
         int[] neighbor;
 
         List<Relationship> relationships = new ArrayList<>( 10_000 );
-        Map<Integer,Node> nodes = new TreeMap<>();
+        Map<Integer, Node> nodes = new TreeMap<>();
+
+        /*
+            Reads the input file/stream and creates a map of (id -> node) and a list of relationships
+            Could replace this with a stream of results coming from a Cypher query?
+            Step 1. Use all the machinery and sub in Cypher query output
+            Step 2. Remove unnecessary conversion and just use Neo4j data types
+         */
+
         try ( BufferedReader bufferedReader = new BufferedReader( in ) )
         {
             String line;
@@ -89,6 +182,9 @@ public class Network implements Cloneable, Serializable
             }
         }
 
+        /*
+         Calculate a few metrics around the nodes
+         */
         int numberOfNodes = nodes.size();
         int[] degree = degree( nodes );
         int[] firstNeighborIndex = new int[numberOfNodes + 1];
@@ -121,14 +217,15 @@ public class Network implements Cloneable, Serializable
             }
         }
 
-        return modularityFunction.createNetwork( numberOfNodes, nEdges, firstNeighborIndex, neighbor, edgeWeight, nodes );
+        return modularityFunction.createNetwork( numberOfNodes, nEdges, firstNeighborIndex, neighbor, edgeWeight,
+                nodes );
     }
 
-    private static int[] degree( Map<Integer,Node> nodesMap )
+    private static int[] degree( Map<Integer, Node> nodesMap )
     {
         int[] numberOfNeighbours = new int[nodesMap.size()];
 
-        for ( Map.Entry<Integer,Node> entry : nodesMap.entrySet() )
+        for ( Map.Entry<Integer, Node> entry : nodesMap.entrySet() )
         {
             numberOfNeighbours[entry.getKey()] = entry.getValue().degree();
         }
@@ -188,7 +285,7 @@ public class Network implements Cloneable, Serializable
     public double[] getNodeWeights()
     {
         double[] nodeWeight = new double[nodes.size()];
-        for ( Map.Entry<Integer,Node> entry : nodes.entrySet() )
+        for ( Map.Entry<Integer, Node> entry : nodes.entrySet() )
         {
             nodeWeight[entry.getKey()] = entry.getValue().weight();
         }
@@ -212,6 +309,11 @@ public class Network implements Cloneable, Serializable
         }
 
         return clusters;
+    }
+
+    public Map<Integer, Node> getNodes()
+    {
+        return nodes;
     }
 
     public void initSingletonClusters()
@@ -379,7 +481,7 @@ public class Network implements Cloneable, Serializable
         qualityFunction = totalEdgeWeightSelfLinks;
         totalEdgeWeight = totalEdgeWeightSelfLinks;
 
-        for ( Map.Entry<Integer,Node> entry : nodes.entrySet() )
+        for ( Map.Entry<Integer, Node> entry : nodes.entrySet() )
         {
             int clusterId = clusters.findClusterId( entry.getKey() );
             for ( Relationship relationship : entry.getValue().relationships() )
@@ -415,7 +517,7 @@ public class Network implements Cloneable, Serializable
 
         boolean update = false;
 
-        Map<Integer,Cluster> clusters = new HashMap<>();
+        Map<Integer, Cluster> clusters = new HashMap<>();
         for ( int i = 0; i < nodes.size(); i++ )
         {
             int clusterId = clusterByIndex( i );
@@ -495,9 +597,9 @@ public class Network implements Cloneable, Serializable
         return update;
     }
 
-    private BestCluster findBestCluster( double resolution, Map<Integer,Cluster> clusters,
-            int[] numberOfNodesPerCluster, int numberUnusedClusters, int[] unusedCluster,
-            double[] edgeWeightsPointingToCluster, int[] neighboringCluster, int nodeId )
+    private BestCluster findBestCluster( double resolution, Map<Integer, Cluster> clusters,
+                                         int[] numberOfNodesPerCluster, int numberUnusedClusters, int[] unusedCluster,
+                                         double[] edgeWeightsPointingToCluster, int[] neighboringCluster, int nodeId )
     {
         Node node = nodes.get( nodeIds()[nodeId] );
 
@@ -535,9 +637,9 @@ public class Network implements Cloneable, Serializable
         {
             int clusterId = neighboringCluster[neighbouringClusterIndex];
             qualityFunction = edgeWeightsPointingToCluster[clusterId] -
-                              nodeWeight( nodeId ) * clusters.get( clusterId ).weight * resolution;
+                    nodeWeight( nodeId ) * clusters.get( clusterId ).weight * resolution;
             if ( (qualityFunction > maxQualityFunction) ||
-                 ((qualityFunction == maxQualityFunction) && (clusterId < bestCluster)) )
+                    ((qualityFunction == maxQualityFunction) && (clusterId < bestCluster)) )
             {
                 bestCluster = clusterId;
                 maxQualityFunction = qualityFunction;
@@ -736,7 +838,9 @@ public class Network implements Cloneable, Serializable
 
 
         if ( !clusteringStatsAvailable )
-        { calcClusteringStats(); }
+        {
+            calcClusteringStats();
+        }
 
         clusterSize = new ClusterSize[numberOfClusters];
         for ( i = 0; i < numberOfClusters; i++ )
@@ -771,13 +875,13 @@ public class Network implements Cloneable, Serializable
         // this currently isn't being set on a reduced network
         // that seems to behave differently though as I don't think the network represents actual nodes, but
         // rather groups of them
-        Map<Integer,Node> newNodesMap = new TreeMap<>();
+        Map<Integer, Node> newNodesMap = new TreeMap<>();
         for ( int nodeId : clusters.get( clusterId ).nodesIds() )
         {
             Node node = nodes.get( nodeId );
             newNodesMap.put( nodeId, node );
         }
-        Network subnetwork = new Network(newNodesMap);
+        Network subnetwork = new Network( newNodesMap );
         subnetwork.totalEdgeWeightSelfLinks = 0;
 
 

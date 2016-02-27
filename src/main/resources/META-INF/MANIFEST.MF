@@ -1,2 +1,2 @@
 Manifest-Version: 1.0
-Main-Class: ModularityOptimizer
+Main-Class: org.neo4j.slm.ModularityOptimizer

@@ -1,4 +1,4 @@
-/**
+package org.neo4j.slm; /**
  * ModularityOptimizer
  *
  * @author Ludo Waltman
@@ -20,7 +20,7 @@ import java.util.Random;
 public class ModularityOptimizer
 {
 
-    enum ModularityFunction
+    public enum ModularityFunction
     {
         Standard( 1 )
                 {
@@ -164,9 +164,6 @@ public class ModularityOptimizer
             System.out.println();
         }
 
-//        network = Network.create( modularityFunction,  new FileReader( inputFileName ) );
-//        network = Network.create( modularityFunction,  new InputStreamReader( System.in ) );
-
         network = "stdin".equals( inputFileName ) ?
                 Network.create( modularityFunction,  new InputStreamReader( System.in ) ) :
                 Network.create( modularityFunction,  new FileReader( inputFileName ) );
@@ -197,8 +194,6 @@ public class ModularityOptimizer
             }
 
             network.initSingletonClusters();
-
-//            printCurrentClusters( network );
 
             j = 0;
             update = true;
@@ -267,7 +262,6 @@ public class ModularityOptimizer
 
 
         OutputStreamWriter writer = "stdout".equals(outputFileName) ?  new OutputStreamWriter( System.out ) : new FileWriter( outputFileName );
-//        writeOutputFile( cluster, new FileWriter( outputFileName ) );
         writeOutputFile( cluster, writer );
     }
 
@@ -276,15 +270,6 @@ public class ModularityOptimizer
         return (algorithm == 1) ? "Louvain algorithm" :
                ((algorithm == 2) ? "Louvain algorithm with multilevel refinement" :
                 "smart local moving algorithm");
-    }
-
-    private static void printCurrentClusters( Network network )
-    {
-        for ( int item : network.getClusters() )
-        {
-            System.out.print( item + " " );
-        }
-        System.out.println();
     }
 
     private static void writeOutputFile( int[] cluster, Writer writer ) throws IOException

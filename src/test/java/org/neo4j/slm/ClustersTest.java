@@ -1,4 +1,8 @@
+package org.neo4j.slm;
+
 import org.junit.Test;
+
+import org.neo4j.slm.Clusters;
 
 import static org.junit.Assert.*;
 

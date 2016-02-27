@@ -1,3 +1,5 @@
+package org.neo4j.slm;
+
 import org.junit.Test;
 
 import java.io.BufferedReader;
@@ -5,6 +7,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.neo4j.slm.ModularityOptimizer;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
