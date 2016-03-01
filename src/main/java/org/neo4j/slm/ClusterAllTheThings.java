@@ -4,14 +4,16 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
+
+import static java.lang.String.format;
 
 public class ClusterAllTheThings
 {
@@ -20,11 +22,10 @@ public class ClusterAllTheThings
 
     @Procedure
     @PerformsWrites
-    // not needed here @PerformsWrites
-    public Stream<Cluster> knows() throws IOException
+    public Stream<Cluster> knows(String label) throws IOException
     {
         String query = "MATCH (person1:Person)-[r:KNOWS]->(person2:Person) \n" +
-                "RETURN person1.id AS p1, person2.id AS p2";
+                       "RETURN person1.id AS p1, person2.id AS p2, toFloat(1) AS weight";
 
         Result rows = db.execute( query );
 
@@ -70,11 +71,18 @@ public class ClusterAllTheThings
         {
             Map<String, Object> params = new HashMap<>();
             params.put("userId", String.valueOf(entry.getKey()));
-            params.put("communityId", entry.getValue().getCluster());
-            db.execute("MATCH (person:Person {id: {userId}})\n" +
-                       "MERGE (community:Community {id: {communityId}})\n" +
-                       "MERGE (person)-[:IN_COMMUNITY]->(community)",
-                    params);
+//            params.put("community", entry.getValue().getCluster());
+//            db.execute("MATCH (person:Person {id: {userId}})\n" +
+//                       "MERGE (community:Community {id: {communityId}})\n" +
+//                       "MERGE (person)-[:IN_COMMUNITY]->(community)",
+//                    params);
+
+            try ( Transaction tx = db.beginTx() )
+            {
+                org.neo4j.graphdb.Node node = db.findNode( Label.label( label ), "id", String.valueOf( entry.getKey() ) );
+                node.addLabel( Label.label( (format( "Community-%d`", entry.getValue().getCluster() )) ) );
+                tx.success();
+            }
         }
 
         return cluster

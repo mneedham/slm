@@ -68,7 +68,7 @@ public class Network implements Cloneable, Serializable
 
             int sourceId = parseInt( (String) row.get( "p1" ) );
             int destinationId = parseInt( (String) row.get( "p2" ) );
-            double weight = 1;
+            double weight = (double) row.get( "weight" );
 
             Node source = nodes.get( sourceId );
             if ( source == null )
