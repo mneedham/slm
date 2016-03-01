@@ -6,14 +6,17 @@ import java.util.Map;
 import java.util.Random;
 import java.util.stream.Stream;
 
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.*;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Name;
 import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
 
 import static java.lang.String.format;
+
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.graphdb.RelationshipType.withName;
 
 public class ClusterAllTheThings
 {
@@ -22,9 +25,27 @@ public class ClusterAllTheThings
 
     @Procedure
     @PerformsWrites
-    public Stream<Cluster> knows(String label) throws IOException
+    public Stream<Cluster> knows( @Name("label") String label, @Name("relationshipType") String relationshipType) throws IOException
     {
-        String query = "MATCH (person1:Person)-[r:KNOWS]->(person2:Person) \n" +
+//        try ( Transaction tx = db.beginTx() )
+//        {
+//            try(ResourceIterator<org.neo4j.graphdb.Node> nodesByLabel = db.findNodes( Label.label( label ) ))
+//            {
+//                while ( nodesByLabel.hasNext() )
+//                {
+//                    org.neo4j.graphdb.Node next = nodesByLabel.next();
+//
+//                    for ( Relationship relationship : next.getRelationships( withName( relationshipType ), OUTGOING ) )
+//                    {
+//                        relationship.getEndNode().hasLabel( Label.label( label ) );
+//                    }
+//                }
+//            }
+//
+//        }
+
+
+        String query = "MATCH (person1:" + label + ")-[r:" + relationshipType + "]->(person2:" + label + ") \n" +
                        "RETURN person1.id AS p1, person2.id AS p2, toFloat(1) AS weight";
 
         Result rows = db.execute( query );
@@ -69,14 +90,6 @@ public class ClusterAllTheThings
 
         for ( Map.Entry<Integer, Node> entry : cluster.entrySet() )
         {
-            Map<String, Object> params = new HashMap<>();
-            params.put("userId", String.valueOf(entry.getKey()));
-//            params.put("community", entry.getValue().getCluster());
-//            db.execute("MATCH (person:Person {id: {userId}})\n" +
-//                       "MERGE (community:Community {id: {communityId}})\n" +
-//                       "MERGE (person)-[:IN_COMMUNITY]->(community)",
-//                    params);
-
             try ( Transaction tx = db.beginTx() )
             {
                 org.neo4j.graphdb.Node node = db.findNode( Label.label( label ), "id", String.valueOf( entry.getKey() ) );
