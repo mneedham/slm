@@ -146,6 +146,7 @@ public class Network implements Cloneable, Serializable
             Step 2. Remove unnecessary conversion and just use Neo4j data types
          */
 
+        int internalNodeId = 0;
         try ( BufferedReader bufferedReader = new BufferedReader( in ) )
         {
             String line;
