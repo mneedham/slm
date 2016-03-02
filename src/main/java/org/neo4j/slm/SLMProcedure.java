@@ -18,14 +18,14 @@ import static java.lang.String.format;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
-public class ClusterAllTheThings
+public class SLMProcedure
 {
     @Context
     public org.neo4j.graphdb.GraphDatabaseService db;
 
     @Procedure
     @PerformsWrites
-    public Stream<Cluster> knows( @Name("label") String label, @Name("relationshipType") String relationshipType) throws IOException
+    public Stream<Cluster> slm( @Name("label") String label, @Name("relationshipType") String relationshipType) throws IOException
     {
 //        try ( Transaction tx = db.beginTx() )
 //        {
@@ -47,6 +47,8 @@ public class ClusterAllTheThings
 
         String query = "MATCH (person1:" + label + ")-[r:" + relationshipType + "]->(person2:" + label + ") \n" +
                        "RETURN person1.id AS p1, person2.id AS p2, toFloat(1) AS weight";
+
+        System.out.println( "query = " + query );
 
         Result rows = db.execute( query );
 
