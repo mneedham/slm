@@ -83,4 +83,12 @@ public class Node
     {
         return out;
     }
+
+    @Override
+    public String toString()
+    {
+        return "Node{" +
+                "nodeId=" + nodeId +
+                '}';
+    }
 }

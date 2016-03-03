@@ -83,6 +83,7 @@ public class Network implements Cloneable, Serializable
             source.out( destination, weight );
         }
 
+        System.out.println( "nodes = " + nodes );
         return modularityFunction.createNetwork( nodes );
     }
 
@@ -828,20 +829,17 @@ public class Network implements Cloneable, Serializable
 
     private Network createSubnetwork( int clusterId )
     {
-
-
         // this currently isn't being set on a reduced network
         // that seems to behave differently though as I don't think the network represents actual nodes, but
         // rather groups of them
-        Map<Integer, Node> newNodesMap = new TreeMap<>();
+        Map<Integer, Node> newNodes = new TreeMap<>();
         for ( int nodeId : clusters.get( clusterId ).nodesIds() )
         {
             Node node = nodes.get( nodeId );
-            newNodesMap.put( nodeId, node );
+            newNodes.put( nodeId, node );
         }
-        Network subnetwork = new Network( newNodesMap );
+        Network subnetwork = new Network( newNodes );
         subnetwork.totalEdgeWeightSelfLinks = 0;
-
 
         return subnetwork;
     }
@@ -855,11 +853,11 @@ public class Network implements Cloneable, Serializable
     private void calcClusteringStats()
     {
         clusters = new Clusters();
-        for ( int i = 0; i < nodes.size(); i++ )
-        {
-            Node node = nodes.get( i );
-            int clusterId = clusterByIndex( i );
 
+        for ( Map.Entry<Integer, Node> entry : nodes.entrySet() )
+        {
+            Node node = entry.getValue();
+            int clusterId = node.getCluster();
             Cluster cluster = clusters.get( clusterId );
             if ( cluster == null )
             {
@@ -900,6 +898,7 @@ public class Network implements Cloneable, Serializable
             int index = 0;
             for ( Node node : nodes )
             {
+                System.out.println( "node = " + node );
                 nodesArray[index] = node.nodeId;
                 index++;
             }
