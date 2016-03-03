@@ -31,8 +31,7 @@ public class ModularityOptimizer
                     }
 
                     @Override
-                    Network createNetwork( int nNodes, int nEdges, int[] firstNeighborIndex, int[] neighbor,
-                            double[] edgeWeight, Map<Integer,Node> nodes )
+                    Network createNetwork( Map<Integer, Node> nodes )
                     {
 
                         return new Network( nodes );
@@ -61,10 +60,9 @@ public class ModularityOptimizer
                     }
 
                     @Override
-                    Network createNetwork( int nNodes, int nEdges, int[] firstNeighborIndex, int[] neighbor,
-                            double[] edgeWeight2, Map<Integer,Node> nodesMap )
+                    Network createNetwork( Map<Integer, Node> nodes )
                     {
-                        return new Network( neighbor, edgeWeight2 );
+                        return new Network( nodes );
                     }
 
                     @Override
@@ -94,8 +92,7 @@ public class ModularityOptimizer
 
         abstract double resolution( double resolution, Network network );
 
-        abstract Network createNetwork( int nNodes, int nEdges, int[] firstNeighborIndex, int[] neighbor,
-                double[] edgeWeight2, Map<Integer,Node> nodesMap );
+        abstract Network createNetwork( Map<Integer, Node> nodes );
 
         abstract ReducedNetwork createReducedNetwork( int nNodes, int nEdges, int[] firstNeighborIndex, int[] neighbor,
                 double[] edgeWeight2, Map<Integer,Node> nodesMap );

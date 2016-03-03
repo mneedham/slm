@@ -35,11 +35,6 @@ public class Network implements Cloneable, Serializable
     private Map<Integer, Node> nodes;
     private Clusters clusters;
 
-    public Network( int[] neighbor, double[] edgeWeight )
-    {
-        this( null );
-    }
-
     public Network( Map<Integer, Node> nodes )
     {
         this.nodes = nodes;
@@ -86,47 +81,9 @@ public class Network implements Cloneable, Serializable
 
             destination.in( source, weight );
             source.out( destination, weight );
-
-            relationships.add( new Relationship( sourceId, destinationId, weight ) );
         }
 
-        /*
-         Calculate a few metrics around the nodes
-         */
-        int numberOfNodes = nodes.size();
-        int[] degree = degree( nodes );
-        int[] firstNeighborIndex = new int[numberOfNodes + 1];
-        nEdges = 0;
-        for ( i = 0; i < numberOfNodes; i++ )
-        {
-            firstNeighborIndex[i] = nEdges;
-            nEdges += degree[i];
-        }
-        firstNeighborIndex[numberOfNodes] = nEdges;
-
-        neighbor = new int[nEdges];
-        edgeWeight = new double[nEdges];
-
-        Arrays.fill( degree, 0 );
-
-        for ( Relationship relationship : relationships )
-        {
-            if ( relationship.getSource() < relationship.getDestination() )
-            {
-                int j = firstNeighborIndex[relationship.getSource()] + degree[relationship.getSource()];
-                neighbor[j] = relationship.getDestination();
-                edgeWeight[j] = relationship.getWeight();
-                degree[relationship.getSource()]++;
-
-                j = firstNeighborIndex[relationship.getDestination()] + degree[relationship.getDestination()];
-                neighbor[j] = relationship.getSource();
-                edgeWeight[j] = relationship.getWeight();
-                degree[relationship.getDestination()]++;
-            }
-        }
-
-        return modularityFunction.createNetwork( numberOfNodes, nEdges, firstNeighborIndex, neighbor, edgeWeight,
-                nodes );
+        return modularityFunction.createNetwork( nodes );
     }
 
     public static Network create( ModularityOptimizer.ModularityFunction modularityFunction, Reader in )
@@ -218,7 +175,7 @@ public class Network implements Cloneable, Serializable
             }
         }
 
-        return modularityFunction.createNetwork( numberOfNodes, nEdges, firstNeighborIndex, neighbor, edgeWeight,
+        return modularityFunction.createNetwork(
                 nodes );
     }
 
