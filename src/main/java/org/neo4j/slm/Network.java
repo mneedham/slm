@@ -83,7 +83,6 @@ public class Network implements Cloneable, Serializable
             source.out( destination, weight );
         }
 
-        System.out.println( "nodes = " + nodes );
         return modularityFunction.createNetwork( nodes );
     }
 
@@ -405,7 +404,8 @@ public class Network implements Cloneable, Serializable
                     }
                 }
 
-                reducedNetwork.nodeWeight[clusterId] += nodeWeight( nodeId );
+//                reducedNetwork.nodeWeight[clusterId] += nodeWeight( nodeId );
+                reducedNetwork.nodeWeight[clusterId] += nodes.get( nodeId ).weight();
             }
 
             for ( index = 0; index < reducedNetworkNEdges2; index++ )
@@ -732,8 +732,14 @@ public class Network implements Cloneable, Serializable
                 int[] subnetworkCluster = subnetwork.getClusters();
                 for ( int nodeIndex = 0; nodeIndex < subnetworkCluster.length; nodeIndex++ )
                 {
-                    updateCluster( clusters.get( subnetworkId ).nodesIds()[nodeIndex],
-                            numberOfClusters + subnetworkCluster[nodeIndex] );
+                    // sub network has a bunch of nodes in it
+                    // we want to update the top level network with the new cluster values
+                    // the clusters within the sub network are 0 based so we need to convert their values to be absolute instead of relative
+                    int nodeId = clusters.get( subnetworkId ).nodesIds()[nodeIndex];
+                    int newClusterId = numberOfClusters + subnetworkCluster[nodeIndex];
+                    nodes.get( nodeId ).setCluster( newClusterId );
+
+//                    updateCluster( nodeId, newClusterId );
                 }
                 numberOfClusters += subnetwork.getNClusters();
             }
@@ -898,7 +904,6 @@ public class Network implements Cloneable, Serializable
             int index = 0;
             for ( Node node : nodes )
             {
-                System.out.println( "node = " + node );
                 nodesArray[index] = node.nodeId;
                 index++;
             }

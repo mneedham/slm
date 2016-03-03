@@ -48,8 +48,6 @@ public class SLMProcedure
         String query = "MATCH (person1:" + label + ")-[r:" + relationshipType + "]->(person2:" + label + ") \n" +
                        "RETURN person1.id AS p1, person2.id AS p2, toFloat(1) AS weight";
 
-        System.out.println( "query = " + query );
-
         Result rows = db.execute( query );
 
         ModularityOptimizer.ModularityFunction modularityFunction = ModularityOptimizer.ModularityFunction.Standard;
